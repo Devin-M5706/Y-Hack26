@@ -139,6 +139,25 @@ def parse_confidence_threshold() -> float:
     return value
 
 
+def enforce_confidence_threshold() -> bool:
+    raw = os.getenv("ENFORCE_STEMI_CONFIDENCE_THRESHOLD", "false").strip().lower()
+    return raw in {"1", "true", "yes", "on"}
+
+
+def default_target_device_ids() -> list[str]:
+    raw_many = os.getenv("DEFAULT_TARGET_DEVICE_IDS", "").strip()
+    if raw_many:
+        parsed = [item.strip() for item in raw_many.split(",") if item.strip()]
+        if parsed:
+            return list(dict.fromkeys(parsed))
+
+    raw_single = os.getenv("DEFAULT_TARGET_DEVICE_ID", "iphone-device-1").strip()
+    if raw_single:
+        return [raw_single]
+
+    return []
+
+
 def parse_model_content(raw_content: Any) -> dict[str, Any]:
     if isinstance(raw_content, dict):
         return raw_content
@@ -250,9 +269,11 @@ class ECGImageAnalyzeResponse(BaseModel):
     stemiPresent: bool
     confidence: float | None = None
     confidenceThreshold: float
+    confidenceThresholdEnforced: bool
     emergencyTriggered: bool
     dispatchAttempted: bool
     dispatchSkippedReason: str | None = None
+    notificationTargetDeviceIds: list[str] = Field(default_factory=list)
     deliveredToConnected: list[str] = Field(default_factory=list)
     queuedForPolling: list[str] = Field(default_factory=list)
     modelAssessment: ModelAssessment
@@ -505,8 +526,13 @@ async def call_lava_gemini(
 def should_trigger_alert(assessment: ModelAssessment, threshold: float) -> bool:
     if not assessment.stemiPresent:
         return False
+
+    if not enforce_confidence_threshold():
+        return True
+
     if assessment.confidence is None:
         return True
+
     return assessment.confidence >= threshold
 
 
@@ -545,6 +571,8 @@ async def health() -> dict[str, Any]:
         "status": "ok",
         "model": os.getenv("LAVA_MODEL_NAME", "gemini-3.1-pro-preview"),
         "stemiConfidenceThreshold": parse_confidence_threshold(),
+        "stemiConfidenceThresholdEnforced": enforce_confidence_threshold(),
+        "defaultTargetDeviceIds": default_target_device_ids(),
     }
 
 
@@ -598,6 +626,8 @@ async def dispatch_test_alert(request: TestAlertDispatchRequest) -> TestAlertDis
 @app.post("/api/v1/ecg/image-analyze", response_model=ECGImageAnalyzeResponse)
 async def analyze_ecg_image(request: ECGImageAnalyzeRequest) -> ECGImageAnalyzeResponse:
     threshold = parse_confidence_threshold()
+    threshold_enforced = enforce_confidence_threshold()
+    target_device_ids = request.targetDeviceIds or default_target_device_ids()
     model_name, lava_request_id, model_output, assessment = await call_lava_gemini(request)
 
     emergency_triggered = should_trigger_alert(assessment, threshold)
@@ -607,13 +637,13 @@ async def analyze_ecg_image(request: ECGImageAnalyzeRequest) -> ECGImageAnalyzeR
     queued: list[str] = []
 
     if emergency_triggered:
-        if request.targetDeviceIds:
+        if target_device_ids:
             dispatch_attempted = True
             alert_payload = build_stemi_alert_payload(request=request, assessment=assessment)
-            delivered, queued = await device_channels.dispatch(request.targetDeviceIds, alert_payload)
+            delivered, queued = await device_channels.dispatch(target_device_ids, alert_payload)
         else:
             dispatch_skipped_reason = (
-                "STEMI detected, but no targetDeviceIds were provided for local alert delivery."
+                "STEMI detected, but no target devices are configured for local alert delivery."
             )
 
     return ECGImageAnalyzeResponse(
@@ -623,9 +653,11 @@ async def analyze_ecg_image(request: ECGImageAnalyzeRequest) -> ECGImageAnalyzeR
         stemiPresent=assessment.stemiPresent,
         confidence=assessment.confidence,
         confidenceThreshold=threshold,
+        confidenceThresholdEnforced=threshold_enforced,
         emergencyTriggered=emergency_triggered,
         dispatchAttempted=dispatch_attempted,
         dispatchSkippedReason=dispatch_skipped_reason,
+        notificationTargetDeviceIds=target_device_ids,
         deliveredToConnected=delivered,
         queuedForPolling=queued,
         modelAssessment=assessment,

@@ -33,6 +33,11 @@ Copy `.env.example` to `.env` and fill values:
 - `LAVA_CHAT_COMPLETIONS_URL` (optional override, default: `https://api.lava.so/v1/chat/completions`)
 - `LAVA_MODEL_NAME` (default: `gemini-3.1-pro-preview`)
 - `STEMI_CONFIDENCE_THRESHOLD` (default: `0.80`)
+- `ENFORCE_STEMI_CONFIDENCE_THRESHOLD` (default: `false`)
+- `DEFAULT_TARGET_DEVICE_ID` (default: `iphone-device-1`)
+- `DEFAULT_TARGET_DEVICE_IDS` (optional comma-separated override)
+
+By default, if the model returns `stemi_present=true`, the API will trigger local alert dispatch immediately (confidence threshold is informational unless `ENFORCE_STEMI_CONFIDENCE_THRESHOLD=true`).
 
 ## Install and Run
 
@@ -62,7 +67,6 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
   "patientId": "patient-42",
   "capturedAt": "2026-03-29T12:00:00Z",
   "ecgImagePath": "python_ecg_lava_api/Screenshot 2026-03-29 052633.png",
-  "targetDeviceIds": ["iphone-device-1"],
   "emergencyPayload": {
     "emergencyId": "emerg-123",
     "victimFirstName": "Alex",
@@ -83,6 +87,8 @@ You may send either:
 - a relative image path like `python_ecg_lava_api/Screenshot 2026-03-29 052633.png`
 
 The request must include exactly one of `ecgImageBase64` or `ecgImagePath`.
+
+`targetDeviceIds` is optional. If omitted, the API uses `DEFAULT_TARGET_DEVICE_IDS` or `DEFAULT_TARGET_DEVICE_ID`.
 
 ## Alert Event Shape Sent to iPhone App
 
