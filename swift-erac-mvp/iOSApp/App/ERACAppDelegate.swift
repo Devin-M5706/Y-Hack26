@@ -11,6 +11,9 @@ final class ERACAppDelegate: UIResponder, UIApplicationDelegate {
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil
     ) -> Bool {
         coordinator.start()
+        if ProcessInfo.processInfo.arguments.contains("-ERACMockPushOnLaunch") {
+            coordinator.injectMockEmergencyPush()
+        }
         return true
     }
 
@@ -29,6 +32,10 @@ final class ERACAppDelegate: UIResponder, UIApplicationDelegate {
 
     func cancelEmergencyWithinWindowFromUI() {
         coordinator.cancelEmergencyWithinWindow()
+    }
+
+    func injectMockEmergencyPushFromUI() {
+        coordinator.injectMockEmergencyPush()
     }
 }
 

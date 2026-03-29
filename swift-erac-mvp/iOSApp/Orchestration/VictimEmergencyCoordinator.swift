@@ -64,6 +64,14 @@ final class VictimEmergencyCoordinator {
         cancelTask?.cancel()
     }
 
+    func injectMockEmergencyPush(_ userInfo: [AnyHashable: Any]) {
+        notifications.injectMockEmergencyPush(userInfo: userInfo)
+    }
+
+    func injectMockEmergencyPush() {
+        injectMockEmergencyPush(Self.defaultMockEmergencyPushPayload())
+    }
+
     private func handleWatchTrigger(_ message: [String: Any]) async {
         pendingTrigger = message
         cancelTask?.cancel()
@@ -99,9 +107,9 @@ final class VictimEmergencyCoordinator {
     private func relayPushToPeers(userInfo: [AnyHashable: Any]) throws {
         let emergencyId = (userInfo["emergencyId"] as? String) ?? UUID().uuidString
         let victimName = (userInfo["victimFirstName"] as? String) ?? "Unknown"
-        let distance = userInfo["distanceMeters"] as? Double
-        let lat = userInfo["latitude"] as? Double
-        let lon = userInfo["longitude"] as? Double
+        let distance = numericValue(userInfo["distanceMeters"])
+        let lat = numericValue(userInfo["latitude"])
+        let lon = numericValue(userInfo["longitude"])
 
         let message = PeerEmergencyRelayMessage(
             emergencyId: emergencyId,
@@ -112,6 +120,31 @@ final class VictimEmergencyCoordinator {
         )
 
         try peerRelay.relayEmergency(message)
+    }
+
+    private func numericValue(_ value: Any?) -> Double? {
+        switch value {
+        case let number as NSNumber:
+            return number.doubleValue
+        case let double as Double:
+            return double
+        case let int as Int:
+            return Double(int)
+        case let string as String:
+            return Double(string)
+        default:
+            return nil
+        }
+    }
+
+    static func defaultMockEmergencyPushPayload() -> [AnyHashable: Any] {
+        [
+            "emergencyId": UUID().uuidString,
+            "victimFirstName": "Alex",
+            "distanceMeters": 120,
+            "latitude": 37.3349,
+            "longitude": -122.0090
+        ]
     }
 }
 
