@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import json
+import mimetypes
 import os
 import uuid
 from collections import defaultdict, deque
@@ -13,11 +14,13 @@ from typing import Any, Deque
 import httpx
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Response, WebSocket, WebSocketDisconnect, status
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 load_dotenv(dotenv_path=Path(__file__).with_name(".env"))
 
 app = FastAPI(title="ECG Image STEMI Lava Bridge", version="3.0.0")
+MODULE_DIR = Path(__file__).resolve().parent
+WORKSPACE_DIR = MODULE_DIR.parent
 
 
 def utc_now() -> datetime:
@@ -51,6 +54,54 @@ def parse_base64_image(raw_value: str) -> tuple[str, str]:
 
 def as_data_url(image_base64: str) -> str:
     media_type, encoded = parse_base64_image(image_base64)
+    return f"data:{media_type};base64,{encoded}"
+
+
+def resolve_image_path(image_path: str) -> Path:
+    value = image_path.strip()
+    if not value:
+        raise ValueError("ecgImagePath cannot be empty")
+
+    candidate = Path(value)
+    possible_paths: list[Path] = []
+
+    if candidate.is_absolute():
+        possible_paths.append(candidate.resolve())
+    else:
+        possible_paths.extend(
+            [
+                (Path.cwd() / candidate).resolve(),
+                (WORKSPACE_DIR / candidate).resolve(),
+                (MODULE_DIR / candidate).resolve(),
+            ]
+        )
+
+    seen: set[str] = set()
+    for path in possible_paths:
+        normalized = str(path)
+        if normalized in seen:
+            continue
+        seen.add(normalized)
+        if path.exists() and path.is_file():
+            return path
+
+    raise ValueError(f"ecgImagePath does not resolve to a file: {image_path}")
+
+
+def data_url_from_image_path(image_path: str) -> str:
+    resolved_path = resolve_image_path(image_path)
+    guessed_type, _ = mimetypes.guess_type(str(resolved_path))
+    media_type = guessed_type if guessed_type and guessed_type.startswith("image/") else "image/png"
+
+    try:
+        image_bytes = resolved_path.read_bytes()
+    except OSError as exc:
+        raise ValueError(f"Unable to read ECG image file: {resolved_path}") from exc
+
+    if not image_bytes:
+        raise ValueError(f"ECG image file is empty: {resolved_path}")
+
+    encoded = base64.b64encode(image_bytes).decode("ascii")
     return f"data:{media_type};base64,{encoded}"
 
 
@@ -154,16 +205,27 @@ class ECGImageAnalyzeRequest(BaseModel):
     ecgId: str
     patientId: str | None = None
     capturedAt: datetime = Field(default_factory=utc_now)
-    ecgImageBase64: str
+    ecgImageBase64: str | None = None
+    ecgImagePath: str | None = None
     targetDeviceIds: list[str] = Field(default_factory=list)
     emergencyPayload: EmergencyPushPayload | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
 
-    @field_validator("ecgImageBase64")
-    @classmethod
-    def validate_image_base64(cls, value: str) -> str:
-        parse_base64_image(value)
-        return value
+    @model_validator(mode="after")
+    def validate_image_source(self) -> ECGImageAnalyzeRequest:
+        has_base64 = bool(self.ecgImageBase64 and self.ecgImageBase64.strip())
+        has_path = bool(self.ecgImagePath and self.ecgImagePath.strip())
+
+        if has_base64 == has_path:
+            raise ValueError("Provide exactly one of ecgImageBase64 or ecgImagePath")
+
+        if has_base64 and self.ecgImageBase64 is not None:
+            parse_base64_image(self.ecgImageBase64)
+
+        if has_path and self.ecgImagePath is not None:
+            resolve_image_path(self.ecgImagePath)
+
+        return self
 
 
 class ModelAssessment(BaseModel):
@@ -339,6 +401,19 @@ def normalize_assessment(model_output: dict[str, Any]) -> ModelAssessment:
     )
 
 
+def request_image_data_url(request: ECGImageAnalyzeRequest) -> str:
+    if request.ecgImageBase64 and request.ecgImageBase64.strip():
+        return as_data_url(request.ecgImageBase64)
+
+    if request.ecgImagePath and request.ecgImagePath.strip():
+        return data_url_from_image_path(request.ecgImagePath)
+
+    raise HTTPException(
+        status_code=422,
+        detail="Provide exactly one of ecgImageBase64 or ecgImagePath",
+    )
+
+
 async def call_lava_gemini(
     request: ECGImageAnalyzeRequest,
 ) -> tuple[str, str | None, dict[str, Any], ModelAssessment]:
@@ -388,7 +463,7 @@ async def call_lava_gemini(
                             "of myocardial infarction in the ECG image."
                         ),
                     },
-                    {"type": "image_url", "image_url": {"url": as_data_url(request.ecgImageBase64)}},
+                    {"type": "image_url", "image_url": {"url": request_image_data_url(request)}},
                 ],
             },
         ],

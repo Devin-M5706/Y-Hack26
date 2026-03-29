@@ -61,7 +61,7 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
   "ecgId": "ecg-001",
   "patientId": "patient-42",
   "capturedAt": "2026-03-29T12:00:00Z",
-  "ecgImageBase64": "iVBORw0KGgoAAAANSUhEUgAA...",
+  "ecgImagePath": "python_ecg_lava_api/Screenshot 2026-03-29 052633.png",
   "targetDeviceIds": ["iphone-device-1"],
   "emergencyPayload": {
     "emergencyId": "emerg-123",
@@ -80,6 +80,9 @@ You may send either:
 
 - raw base64 image data, or
 - a full data URL like `data:image/png;base64,...`
+- a relative image path like `python_ecg_lava_api/Screenshot 2026-03-29 052633.png`
+
+The request must include exactly one of `ecgImageBase64` or `ecgImagePath`.
 
 ## Alert Event Shape Sent to iPhone App
 
