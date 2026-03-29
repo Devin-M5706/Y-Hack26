@@ -282,8 +282,8 @@ class ECGImageAnalyzeResponse(BaseModel):
 
 class TestAlertDispatchRequest(BaseModel):
     targetDeviceIds: list[str] = Field(..., min_length=1)
-    title: str = "Possible STEMI detected"
-    body: str = "Possible ST-elevation myocardial infarction detected from ECG image."
+    title: str = "🚨🫀 POSSIBLE HEART ATTACK ALERT"
+    body: str = "⚠️ Possible STEMI detected. Call emergency services NOW and respond immediately."
     emergencyPayload: EmergencyPushPayload | None = None
     extra: dict[str, Any] = Field(default_factory=dict)
 
@@ -553,10 +553,10 @@ def build_stemi_alert_payload(
         "latitude": emergency.latitude,
         "longitude": emergency.longitude,
         "ecgId": request.ecgId,
-        "title": "Possible STEMI detected",
+        "title": "🚨🫀 POSSIBLE HEART ATTACK ALERT",
         "body": (
-            "Possible ST-elevation myocardial infarction detected on ECG "
-            f"{request.ecgId} (confidence {confidence_text})."
+            "⚠️ ECG shows possible STEMI. Call emergency services NOW. "
+            f"ECG: {request.ecgId}. Confidence: {confidence_text}."
         ),
         "confidence": assessment.confidence,
         "reasoning": assessment.reasoning,

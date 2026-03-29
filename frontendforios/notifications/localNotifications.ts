@@ -53,13 +53,13 @@ export async function scheduleEmergencyLocalNotification(
   }
 
   const victim = alert.victimFirstName?.trim() || "Unknown";
-  const fallbackBody = `Possible STEMI detected for ${victim}, ${asDistanceLabel(
+  const fallbackBody = `⚠️ Possible STEMI for ${victim} (${asDistanceLabel(
     alert.distanceMeters
-  )}.`;
+  )}). Call emergency services now.`;
 
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: alert.title?.trim() || "Possible STEMI detected",
+      title: alert.title?.trim() || "🚨🫀 POSSIBLE HEART ATTACK ALERT",
       body: alert.body?.trim() || fallbackBody,
       data: alert,
       sound: true,
