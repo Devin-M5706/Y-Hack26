@@ -4,7 +4,7 @@ import CPRGuide from "@/components/cpr/CPRGuide";
 import { ArrowLeft } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "CPR Guide — ERAC",
+  title: "CPR Guide — handsforhearts",
   description:
     "Step-by-step AHA-approved CPR guide with live metronome. Learn to save a life in minutes.",
 };

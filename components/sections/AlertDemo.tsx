@@ -206,7 +206,7 @@ function IPhoneScreen({ state }: { state: DemoState }) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <span className="text-white text-xs font-bold">ERAC</span>
+                    <span className="text-white text-xs font-bold">handsforhearts</span>
                     <span className="text-white/30 text-xs">now</span>
                   </div>
                   <div className="text-white/40 text-xs">EMERGENCY NEARBY</div>
@@ -427,7 +427,7 @@ export default function AlertDemo() {
                 <motion.div key="desc-locked" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
                   <h3 className="text-2xl font-bold text-white mb-3">Passive protection, always on.</h3>
                   <p className="text-white/50 leading-relaxed mb-4">
-                    Your phone sits in your pocket, completely normal. ERAC runs silently
+                    Your phone sits in your pocket, completely normal. handsforhearts runs silently
                     in the background, location shared only when an emergency is active.
                   </p>
                   <p className="text-white/30 text-sm">No battery drain. No constant notifications. Until they matter.</p>
@@ -473,7 +473,7 @@ export default function AlertDemo() {
                     No training required.
                   </h3>
                   <p className="text-white/50 leading-relaxed mb-4">
-                    7 steps, large text, a live metronome at 110 BPM. ERAC walks you through
+                    7 steps, large text, a live metronome at 110 BPM. handsforhearts walks you through
                     AHA-approved CPR — even if you've never done it before.
                   </p>
                   <div className="glass-card rounded-xl p-4 border border-white/5">

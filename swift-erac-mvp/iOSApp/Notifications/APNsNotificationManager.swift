@@ -24,6 +24,53 @@ final class APNsNotificationManager: NSObject {
     func handleRemoteNotification(userInfo: [AnyHashable: Any]) {
         onEmergencyPush?(userInfo)
     }
+
+    func injectMockEmergencyPush(userInfo: [AnyHashable: Any]) {
+        handleRemoteNotification(userInfo: userInfo)
+        scheduleMockAlertBanner(userInfo: userInfo)
+    }
+
+    private func scheduleMockAlertBanner(userInfo: [AnyHashable: Any]) {
+        let victimName = (userInfo["victimFirstName"] as? String) ?? "Unknown"
+        let distanceText: String
+        if let distance = numericValue(userInfo["distanceMeters"]) {
+            distanceText = String(format: "%.0f", distance)
+        } else {
+            distanceText = "nearby"
+        }
+
+        let content = UNMutableNotificationContent()
+        content.title = "Emergency Alert (Mock)"
+        if distanceText == "nearby" {
+            content.body = "Possible cardiac arrest detected for \(victimName)."
+        } else {
+            content.body = "Possible cardiac arrest detected for \(victimName), \(distanceText)m away."
+        }
+        content.sound = .default
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 0.2, repeats: false)
+        let request = UNNotificationRequest(
+            identifier: "mock-emergency-\(UUID().uuidString)",
+            content: content,
+            trigger: trigger
+        )
+        UNUserNotificationCenter.current().add(request)
+    }
+
+    private func numericValue(_ value: Any?) -> Double? {
+        switch value {
+        case let number as NSNumber:
+            return number.doubleValue
+        case let double as Double:
+            return double
+        case let int as Int:
+            return Double(int)
+        case let string as String:
+            return Double(string)
+        default:
+            return nil
+        }
+    }
 }
 
 extension APNsNotificationManager: UNUserNotificationCenterDelegate {

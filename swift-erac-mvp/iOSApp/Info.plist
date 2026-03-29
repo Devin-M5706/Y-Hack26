@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>$(DEVELOPMENT_LANGUAGE)</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>$(PRODUCT_NAME)</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+    <key>UISupportedInterfaceOrientations~ipad</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationPortraitUpsideDown</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+    <key>UILaunchScreen</key>
+    <dict/>
+    <key>UIApplicationSceneManifest</key>
+    <dict>
+        <key>UIApplicationSupportsMultipleScenes</key>
+        <false/>
+    </dict>
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>location</string>
+        <string>remote-notification</string>
+    </array>
+    <key>NSHealthShareUsageDescription</key>
+    <string>ERAC reads health metrics to detect potential cardiac emergencies.</string>
+    <key>NSHealthUpdateUsageDescription</key>
+    <string>ERAC stores emergency metadata for in-app incident state.</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>ERAC uses your location to route responders during emergencies.</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>ERAC needs always-on location for emergency responder geofencing.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>ERAC may use microphone access during emergency call workflows.</string>
+    <key>NSUserNotificationUsageDescription</key>
+    <string>ERAC sends critical emergency alerts to nearby responders.</string>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>ERAC relays emergency notifications to nearby devices when needed.</string>
+    <key>NSBonjourServices</key>
+    <array>
+        <string>_erac-alert._tcp</string>
+    </array>
+</dict>
+</plist>

@@ -1,0 +1,407 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1D2E8B0EB55F1975305F1307 /* PeerEmergencyRelayMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 831B649C341F487F90F4F176 /* PeerEmergencyRelayMessage.swift */; };
+		247C5FC4F4A541C9D4276E55 /* MultipeerRelayService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFFB9474110D59CD8251F11D /* MultipeerRelayService.swift */; };
+		5467ED040DC6BD9584DF36D1 /* WatchMessageReceiver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79F37C8A3C04660A2ADDCE95 /* WatchMessageReceiver.swift */; };
+		64BBC07B9965D57BF20C6102 /* VictimEmergencyCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8231EBA018235AD66525E9F3 /* VictimEmergencyCoordinator.swift */; };
+		6B7D93FE5A49B2283B1ED2FE /* ERACWatchRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88FBD5BC0242EEB51980036E /* ERACWatchRuntime.swift */; };
+		795072BD84A9D35FDF0FD4F5 /* APNsNotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84C3B976153187D7DAFE5618 /* APNsNotificationManager.swift */; };
+		8CD7727A355210120F41D13A /* AppEndpoints.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F479294642F220C4DB58EF7 /* AppEndpoints.swift */; };
+		A5B22607896512CF5DEFC0AD /* ERACWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A85A7BAE93CC6C81C0F79987 /* ERACWatchApp.swift */; };
+		A9CB502B340AA2507BBD211B /* ERACWatchExtensionDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49A7703863A3962EB80502C2 /* ERACWatchExtensionDelegate.swift */; };
+		AA1ECE712EE485C00BE11391 /* ERACAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 690D18590CDAF5E12032C723 /* ERACAppDelegate.swift */; };
+		C4969BCFBC8E5526D8DA568D /* EmergencyAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E33587614B4935A755CD65A /* EmergencyAPIClient.swift */; };
+		C6BB833F1B4ABEA3A44CE250 /* PeerEmergencyRelayMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 831B649C341F487F90F4F176 /* PeerEmergencyRelayMessage.swift */; };
+		EBC989F30A1375B6CA437A3C /* ERACiOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4F12FFCEBB103CBC990EB /* ERACiOSApp.swift */; };
+		F6A67DB82CFFB107958060D3 /* LocationProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C876260747024B43F6245A97 /* LocationProvider.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		2F479294642F220C4DB58EF7 /* AppEndpoints.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEndpoints.swift; sourceTree = "<group>"; };
+		49A7703863A3962EB80502C2 /* ERACWatchExtensionDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ERACWatchExtensionDelegate.swift; sourceTree = "<group>"; };
+		59476B7B83A99E3FAA0F2487 /* ERACWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ERACWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5E33587614B4935A755CD65A /* EmergencyAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmergencyAPIClient.swift; sourceTree = "<group>"; };
+		690D18590CDAF5E12032C723 /* ERACAppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ERACAppDelegate.swift; sourceTree = "<group>"; };
+		78CBFF30951ABF10CE0DAF35 /* ERACWatch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ERACWatch.entitlements; sourceTree = "<group>"; };
+		79F37C8A3C04660A2ADDCE95 /* WatchMessageReceiver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchMessageReceiver.swift; sourceTree = "<group>"; };
+		8231EBA018235AD66525E9F3 /* VictimEmergencyCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VictimEmergencyCoordinator.swift; sourceTree = "<group>"; };
+		831B649C341F487F90F4F176 /* PeerEmergencyRelayMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeerEmergencyRelayMessage.swift; sourceTree = "<group>"; };
+		84C3B976153187D7DAFE5618 /* APNsNotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APNsNotificationManager.swift; sourceTree = "<group>"; };
+		852C588A3940D95F783AA19A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		88FBD5BC0242EEB51980036E /* ERACWatchRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ERACWatchRuntime.swift; sourceTree = "<group>"; };
+		8DC4F12FFCEBB103CBC990EB /* ERACiOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ERACiOSApp.swift; sourceTree = "<group>"; };
+		9A895F71C566CAFBF4B31EA9 /* ERACiOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ERACiOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A32EDE59AADCA700BDA5165C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		A85A7BAE93CC6C81C0F79987 /* ERACWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ERACWatchApp.swift; sourceTree = "<group>"; };
+		A86DAE24162B47B0B851C010 /* ERACiOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ERACiOS.entitlements; sourceTree = "<group>"; };
+		C876260747024B43F6245A97 /* LocationProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationProvider.swift; sourceTree = "<group>"; };
+		DFFB9474110D59CD8251F11D /* MultipeerRelayService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultipeerRelayService.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		156D6B6B63BAF350D8AE183F /* WatchApp */ = {
+			isa = PBXGroup;
+			children = (
+				78CBFF30951ABF10CE0DAF35 /* ERACWatch.entitlements */,
+				88FBD5BC0242EEB51980036E /* ERACWatchRuntime.swift */,
+				A32EDE59AADCA700BDA5165C /* Info.plist */,
+				DBE7F504F94B3C07E01DA7A1 /* App */,
+			);
+			path = WatchApp;
+			sourceTree = "<group>";
+		};
+		171F767FD39B554BD3AB3DC5 /* PeerRelay */ = {
+			isa = PBXGroup;
+			children = (
+				DFFB9474110D59CD8251F11D /* MultipeerRelayService.swift */,
+			);
+			path = PeerRelay;
+			sourceTree = "<group>";
+		};
+		218C9C968D96F4E2F53D3763 /* Network */ = {
+			isa = PBXGroup;
+			children = (
+				5E33587614B4935A755CD65A /* EmergencyAPIClient.swift */,
+			);
+			path = Network;
+			sourceTree = "<group>";
+		};
+		2A3F666F5C2667AD758AACEC /* Location */ = {
+			isa = PBXGroup;
+			children = (
+				C876260747024B43F6245A97 /* LocationProvider.swift */,
+			);
+			path = Location;
+			sourceTree = "<group>";
+		};
+		4F90345FA6C2F58CBC660439 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				9A895F71C566CAFBF4B31EA9 /* ERACiOS.app */,
+				59476B7B83A99E3FAA0F2487 /* ERACWatch.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		6EDD8E6CC759590C00082A3A = {
+			isa = PBXGroup;
+			children = (
+				ADBD6C146FEDA0481D5371BD /* iOSApp */,
+				966311443D8D4153DACD6F99 /* Shared */,
+				156D6B6B63BAF350D8AE183F /* WatchApp */,
+				4F90345FA6C2F58CBC660439 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		7B1A5F7C91544237C7848008 /* Notifications */ = {
+			isa = PBXGroup;
+			children = (
+				84C3B976153187D7DAFE5618 /* APNsNotificationManager.swift */,
+			);
+			path = Notifications;
+			sourceTree = "<group>";
+		};
+		8EAB86A6514FBCECF779C591 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				2F479294642F220C4DB58EF7 /* AppEndpoints.swift */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
+		966311443D8D4153DACD6F99 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				EC078A73AD3C812263B3F71E /* Models */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		9F2C5EEBD978B1BCAFB00717 /* Orchestration */ = {
+			isa = PBXGroup;
+			children = (
+				8231EBA018235AD66525E9F3 /* VictimEmergencyCoordinator.swift */,
+			);
+			path = Orchestration;
+			sourceTree = "<group>";
+		};
+		ADBD6C146FEDA0481D5371BD /* iOSApp */ = {
+			isa = PBXGroup;
+			children = (
+				A86DAE24162B47B0B851C010 /* ERACiOS.entitlements */,
+				852C588A3940D95F783AA19A /* Info.plist */,
+				E114F65A0B8F25427F9E9660 /* App */,
+				8EAB86A6514FBCECF779C591 /* Config */,
+				FFAF0F7EF6F5A64E55775B17 /* Connectivity */,
+				2A3F666F5C2667AD758AACEC /* Location */,
+				218C9C968D96F4E2F53D3763 /* Network */,
+				7B1A5F7C91544237C7848008 /* Notifications */,
+				9F2C5EEBD978B1BCAFB00717 /* Orchestration */,
+				171F767FD39B554BD3AB3DC5 /* PeerRelay */,
+			);
+			path = iOSApp;
+			sourceTree = "<group>";
+		};
+		DBE7F504F94B3C07E01DA7A1 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				A85A7BAE93CC6C81C0F79987 /* ERACWatchApp.swift */,
+				49A7703863A3962EB80502C2 /* ERACWatchExtensionDelegate.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		E114F65A0B8F25427F9E9660 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				690D18590CDAF5E12032C723 /* ERACAppDelegate.swift */,
+				8DC4F12FFCEBB103CBC990EB /* ERACiOSApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		EC078A73AD3C812263B3F71E /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				831B649C341F487F90F4F176 /* PeerEmergencyRelayMessage.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		FFAF0F7EF6F5A64E55775B17 /* Connectivity */ = {
+			isa = PBXGroup;
+			children = (
+				79F37C8A3C04660A2ADDCE95 /* WatchMessageReceiver.swift */,
+			);
+			path = Connectivity;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		380D65A4FFAE9977AC9FEBFF /* ERACWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 415F6296FD95BA3D92754E6D /* Build configuration list for PBXNativeTarget "ERACWatch" */;
+			buildPhases = (
+				41991D08F00D214E5C049511 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ERACWatch;
+			packageProductDependencies = (
+			);
+			productName = ERACWatch;
+			productReference = 59476B7B83A99E3FAA0F2487 /* ERACWatch.app */;
+			productType = "com.apple.product-type.application";
+		};
+		B8F227C735D3A2D22145DDF7 /* ERACiOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 20423F5FBB8725F6775A5B01 /* Build configuration list for PBXNativeTarget "ERACiOS" */;
+			buildPhases = (
+				4B2702EAF6E143D208052805 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ERACiOS;
+			packageProductDependencies = (
+			);
+			productName = ERACiOS;
+			productReference = 9A895F71C566CAFBF4B31EA9 /* ERACiOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		05C6E503EF87FF40DF512409 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					380D65A4FFAE9977AC9FEBFF = {
+						DevelopmentTeam = "";
+					};
+					B8F227C735D3A2D22145DDF7 = {
+						DevelopmentTeam = "";
+					};
+				};
+			};
+			buildConfigurationList = 3DBB5AFF59B3FE55E4A312DB /* Build configuration list for PBXProject "ERACMVP" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 6EDD8E6CC759590C00082A3A;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 4F90345FA6C2F58CBC660439 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				380D65A4FFAE9977AC9FEBFF /* ERACWatch */,
+				B8F227C735D3A2D22145DDF7 /* ERACiOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		41991D08F00D214E5C049511 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A5B22607896512CF5DEFC0AD /* ERACWatchApp.swift in Sources */,
+				A9CB502B340AA2507BBD211B /* ERACWatchExtensionDelegate.swift in Sources */,
+				6B7D93FE5A49B2283B1ED2FE /* ERACWatchRuntime.swift in Sources */,
+				1D2E8B0EB55F1975305F1307 /* PeerEmergencyRelayMessage.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4B2702EAF6E143D208052805 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				795072BD84A9D35FDF0FD4F5 /* APNsNotificationManager.swift in Sources */,
+				8CD7727A355210120F41D13A /* AppEndpoints.swift in Sources */,
+				AA1ECE712EE485C00BE11391 /* ERACAppDelegate.swift in Sources */,
+				EBC989F30A1375B6CA437A3C /* ERACiOSApp.swift in Sources */,
+				C4969BCFBC8E5526D8DA568D /* EmergencyAPIClient.swift in Sources */,
+				F6A67DB82CFFB107958060D3 /* LocationProvider.swift in Sources */,
+				247C5FC4F4A541C9D4276E55 /* MultipeerRelayService.swift in Sources */,
+				C6BB833F1B4ABEA3A44CE250 /* PeerEmergencyRelayMessage.swift in Sources */,
+				64BBC07B9965D57BF20C6102 /* VictimEmergencyCoordinator.swift in Sources */,
+				5467ED040DC6BD9584DF36D1 /* WatchMessageReceiver.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		52BFDF874B6816323F73E2DF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = iOSApp/ERACiOS.entitlements;
+				DEVELOPMENT_TEAM = "";
+				INFOPLIST_FILE = iOSApp/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.erac.ios;
+				PRODUCT_NAME = ERACiOS;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		5D5340A0D7073770A818482B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = WatchApp/ERACWatch.entitlements;
+				DEVELOPMENT_TEAM = "";
+				INFOPLIST_FILE = WatchApp/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.erac.watch;
+				PRODUCT_NAME = ERACWatch;
+				SDKROOT = watchos;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
+		8AC314AB9B14E4EF401ABC0F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
+		9F9DA273744DF7A70D62D73E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = WatchApp/ERACWatch.entitlements;
+				DEVELOPMENT_TEAM = "";
+				INFOPLIST_FILE = WatchApp/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.erac.watch;
+				PRODUCT_NAME = ERACWatch;
+				SDKROOT = watchos;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
+		F5AD6DA7F9F121C5F9F7A056 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = iOSApp/ERACiOS.entitlements;
+				DEVELOPMENT_TEAM = "";
+				INFOPLIST_FILE = iOSApp/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.erac.ios;
+				PRODUCT_NAME = ERACiOS;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		FF72191CD5C7711B344F1134 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		20423F5FBB8725F6775A5B01 /* Build configuration list for PBXNativeTarget "ERACiOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F5AD6DA7F9F121C5F9F7A056 /* Debug */,
+				52BFDF874B6816323F73E2DF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		3DBB5AFF59B3FE55E4A312DB /* Build configuration list for PBXProject "ERACMVP" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FF72191CD5C7711B344F1134 /* Debug */,
+				8AC314AB9B14E4EF401ABC0F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		415F6296FD95BA3D92754E6D /* Build configuration list for PBXNativeTarget "ERACWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9F9DA273744DF7A70D62D73E /* Debug */,
+				5D5340A0D7073770A818482B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 05C6E503EF87FF40DF512409 /* Project object */;
+}
