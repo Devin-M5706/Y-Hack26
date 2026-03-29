@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "handsforhearts",
+    "slug": "handsforhearts",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "scheme": "handsforhearts",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#080808"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.handsforhearts.app",
+      "infoPlist": {
+        "UIBackgroundModes": ["remote-notification"]
+      }
+    },
+    "android": {
+      "package": "com.handsforhearts.app"
+    },
+    "plugins": [
+      "expo-asset",
+      "expo-font",
+      "expo-notifications"
+    ],
+    "extra": {
+      "ecgAlertApiBaseUrl": "http://127.0.0.1:8000",
+      "ecgAlertWsBaseUrl": "ws://127.0.0.1:8000",
+      "ecgAlertDeviceId": "iphone-device-1",
+      "ecgAlertPollIntervalMs": 8000
+    }
+  }
+}
