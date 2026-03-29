@@ -97,20 +97,26 @@ When STEMI is triggered, the backend pushes payloads like this through WebSocket
 ```json
 {
   "type": "stemi_alert",
+  "severity": "critical",
   "emergencyId": "emerg-123",
   "victimFirstName": "Alex",
   "distanceMeters": 110.5,
   "latitude": 37.332,
   "longitude": -122.031,
   "ecgId": "ecg-001",
-  "title": "Possible STEMI detected",
-  "body": "Possible ST-elevation myocardial infarction detected on ECG ecg-001 (confidence 0.91).",
+  "title": "🚨 CRITICAL CARDIAC EMERGENCY",
+  "body": "⚠️ High-confidence STEMI detected. Call emergency services NOW and respond immediately. ECG: ecg-001. Confidence: 0.91.",
   "confidence": 0.91,
   "reasoning": "...",
   "leadFindings": ["Inferior lead ST elevation"],
   "detectedAt": "2026-03-29T12:00:02Z"
 }
 ```
+
+Severity mapping:
+
+- `critical`: confidence >= 0.90
+- `warning`: confidence < 0.90 or confidence missing
 
 The React Native app should schedule a local notification from this payload.
 

@@ -1,5 +1,6 @@
 export interface IncomingAlert {
   type?: string;
+  severity?: "critical" | "warning" | string;
   emergencyId?: string;
   victimFirstName?: string;
   distanceMeters?: number | string | null;

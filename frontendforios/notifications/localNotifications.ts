@@ -28,6 +28,15 @@ function asDistanceLabel(value: IncomingAlert["distanceMeters"]): string {
   return "nearby";
 }
 
+function fallbackTitleForSeverity(alert: IncomingAlert): string {
+  const severity = String(alert.severity ?? "").toLowerCase();
+  if (severity === "critical") {
+    return "🚨 CRITICAL CARDIAC EMERGENCY";
+  }
+
+  return "⚠️ URGENT CARDIAC ALERT";
+}
+
 export async function initializeLocalNotifications(): Promise<boolean> {
   if (initialized) {
     return true;
@@ -53,13 +62,19 @@ export async function scheduleEmergencyLocalNotification(
   }
 
   const victim = alert.victimFirstName?.trim() || "Unknown";
-  const fallbackBody = `⚠️ Possible STEMI for ${victim} (${asDistanceLabel(
-    alert.distanceMeters
-  )}). Call emergency services now.`;
+  const severity = String(alert.severity ?? "").toLowerCase();
+  const fallbackBody =
+    severity === "critical"
+      ? `⚠️ High-confidence STEMI for ${victim} (${asDistanceLabel(
+          alert.distanceMeters
+        )}). Call emergency services NOW and respond immediately.`
+      : `🚑 Possible STEMI for ${victim} (${asDistanceLabel(
+          alert.distanceMeters
+        )}). Respond now and call emergency services.`;
 
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: alert.title?.trim() || "🚨🫀 POSSIBLE HEART ATTACK ALERT",
+      title: alert.title?.trim() || fallbackTitleForSeverity(alert),
       body: alert.body?.trim() || fallbackBody,
       data: alert,
       sound: true,

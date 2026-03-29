@@ -9,7 +9,7 @@ import uuid
 from collections import defaultdict, deque
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Deque
+from typing import Any, Deque, Literal
 
 import httpx
 from dotenv import load_dotenv
@@ -271,6 +271,7 @@ class ECGImageAnalyzeResponse(BaseModel):
     confidenceThreshold: float
     confidenceThresholdEnforced: bool
     emergencyTriggered: bool
+    notificationSeverity: Literal["critical", "warning"] | None = None
     dispatchAttempted: bool
     dispatchSkippedReason: str | None = None
     notificationTargetDeviceIds: list[str] = Field(default_factory=list)
@@ -282,7 +283,8 @@ class ECGImageAnalyzeResponse(BaseModel):
 
 class TestAlertDispatchRequest(BaseModel):
     targetDeviceIds: list[str] = Field(..., min_length=1)
-    title: str = "🚨🫀 POSSIBLE HEART ATTACK ALERT"
+    severity: Literal["critical", "warning"] = "critical"
+    title: str = "🚨 CRITICAL CARDIAC EMERGENCY"
     body: str = "⚠️ Possible STEMI detected. Call emergency services NOW and respond immediately."
     emergencyPayload: EmergencyPushPayload | None = None
     extra: dict[str, Any] = Field(default_factory=dict)
@@ -536,28 +538,47 @@ def should_trigger_alert(assessment: ModelAssessment, threshold: float) -> bool:
     return assessment.confidence >= threshold
 
 
+def stemi_alert_severity(confidence: float | None) -> Literal["critical", "warning"]:
+    if confidence is not None and confidence >= 0.90:
+        return "critical"
+    return "warning"
+
+
 def build_stemi_alert_payload(
     request: ECGImageAnalyzeRequest,
     assessment: ModelAssessment,
 ) -> dict[str, Any]:
     emergency = request.emergencyPayload or EmergencyPushPayload()
+    severity = stemi_alert_severity(assessment.confidence)
+
     confidence_text = "unknown"
     if assessment.confidence is not None:
         confidence_text = f"{assessment.confidence:.2f}"
 
+    if severity == "critical":
+        title = "🚨 CRITICAL CARDIAC EMERGENCY"
+        body = (
+            "⚠️ High-confidence STEMI detected. Call emergency services NOW and respond immediately. "
+            f"ECG: {request.ecgId}. Confidence: {confidence_text}."
+        )
+    else:
+        title = "⚠️ URGENT CARDIAC ALERT"
+        body = (
+            "🚑 Possible STEMI detected. Respond immediately and call emergency services now. "
+            f"ECG: {request.ecgId}. Confidence: {confidence_text}."
+        )
+
     return {
         "type": "stemi_alert",
+        "severity": severity,
         "emergencyId": emergency.emergencyId,
         "victimFirstName": emergency.victimFirstName,
         "distanceMeters": emergency.distanceMeters,
         "latitude": emergency.latitude,
         "longitude": emergency.longitude,
         "ecgId": request.ecgId,
-        "title": "🚨🫀 POSSIBLE HEART ATTACK ALERT",
-        "body": (
-            "⚠️ ECG shows possible STEMI. Call emergency services NOW. "
-            f"ECG: {request.ecgId}. Confidence: {confidence_text}."
-        ),
+        "title": title,
+        "body": body,
         "confidence": assessment.confidence,
         "reasoning": assessment.reasoning,
         "leadFindings": assessment.leadFindings,
@@ -609,6 +630,7 @@ async def dispatch_test_alert(request: TestAlertDispatchRequest) -> TestAlertDis
     emergency = request.emergencyPayload or EmergencyPushPayload(victimFirstName="Alex")
     payload = {
         "type": "stemi_alert_test",
+        "severity": request.severity,
         "emergencyId": emergency.emergencyId,
         "victimFirstName": emergency.victimFirstName,
         "distanceMeters": emergency.distanceMeters,
@@ -633,6 +655,7 @@ async def analyze_ecg_image(request: ECGImageAnalyzeRequest) -> ECGImageAnalyzeR
     emergency_triggered = should_trigger_alert(assessment, threshold)
     dispatch_attempted = False
     dispatch_skipped_reason: str | None = None
+    notification_severity: Literal["critical", "warning"] | None = None
     delivered: list[str] = []
     queued: list[str] = []
 
@@ -640,6 +663,9 @@ async def analyze_ecg_image(request: ECGImageAnalyzeRequest) -> ECGImageAnalyzeR
         if target_device_ids:
             dispatch_attempted = True
             alert_payload = build_stemi_alert_payload(request=request, assessment=assessment)
+            severity_raw = alert_payload.get("severity")
+            if severity_raw in {"critical", "warning"}:
+                notification_severity = severity_raw
             delivered, queued = await device_channels.dispatch(target_device_ids, alert_payload)
         else:
             dispatch_skipped_reason = (
@@ -655,6 +681,7 @@ async def analyze_ecg_image(request: ECGImageAnalyzeRequest) -> ECGImageAnalyzeR
         confidenceThreshold=threshold,
         confidenceThresholdEnforced=threshold_enforced,
         emergencyTriggered=emergency_triggered,
+        notificationSeverity=notification_severity,
         dispatchAttempted=dispatch_attempted,
         dispatchSkippedReason=dispatch_skipped_reason,
         notificationTargetDeviceIds=target_device_ids,
