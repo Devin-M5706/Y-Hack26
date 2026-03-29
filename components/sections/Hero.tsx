@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { motion } from "framer-motion";
 import Link from "next/link";
 import { ChevronDown, Watch, Zap } from "lucide-react";
 
@@ -51,49 +49,29 @@ export default function Hero() {
       {/* Content */}
       <div className="relative z-10 max-w-5xl mx-auto px-6 text-center pt-24 pb-20">
         {/* Badge */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="inline-flex items-center gap-2 border border-emergency/30 bg-emergency/10 rounded-full px-4 py-1.5 text-xs text-emergency font-medium mb-8"
-        >
+        <div className="hero-fade-1 inline-flex items-center gap-2 border border-emergency/30 bg-emergency/10 rounded-full px-4 py-1.5 text-xs text-emergency font-medium mb-8">
           <Watch className="w-3.5 h-3.5" />
           Powered by Apple Watch HealthKit
-        </motion.div>
+        </div>
 
         {/* Headline */}
-        <motion.h1
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight text-white leading-[1.08] mb-6"
-        >
+        <h1 className="hero-fade-2 text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight text-white leading-[1.08] mb-6">
           The person next to you{" "}
           <br className="hidden sm:block" />
           might need your help{" "}
           <span className="text-emergency text-glow">right now.</span>
-        </motion.h1>
+        </h1>
 
         {/* Sub-headline */}
-        <motion.p
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-lg sm:text-xl text-white/50 max-w-2xl mx-auto leading-relaxed mb-10"
-        >
-          handsforhearts uses Apple Watch's continuous biometric monitoring to detect
-          cardiac arrest, then broadcasts a{" "}
+        <p className="hero-fade-3 text-lg sm:text-xl text-white/50 max-w-2xl mx-auto leading-relaxed mb-10">
+          handsforhearts uses Apple Watch&apos;s continuous biometric monitoring to
+          detect cardiac arrest, then broadcasts a{" "}
           <span className="text-white/80">Critical Alert</span> to every nearby
           iPhone — turning strangers into lifesavers in under 90 seconds.
-        </motion.p>
+        </p>
 
         {/* CTAs */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20"
-        >
+        <div className="hero-fade-4 flex flex-col sm:flex-row items-center justify-center gap-4 mb-20">
           <Link
             href="#how-it-works"
             className="group relative flex items-center gap-2 bg-emergency hover:bg-emergency/90 text-white font-semibold px-7 py-3.5 rounded-full transition-all emergency-glow hover:scale-105"
@@ -108,39 +86,26 @@ export default function Hero() {
           >
             View CPR Guide
           </Link>
-        </motion.div>
+        </div>
 
         {/* Stats strip */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-white/5 rounded-2xl overflow-hidden border border-white/5"
-        >
+        <div className="hero-fade-5 grid grid-cols-2 sm:grid-cols-4 gap-px bg-white/5 rounded-2xl overflow-hidden border border-white/5">
           {stats.map((s, i) => (
-            <div
-              key={i}
-              className="bg-[#080808] px-6 py-5 text-center"
-            >
+            <div key={i} className="bg-[#080808] px-6 py-5 text-center">
               <div className="text-2xl sm:text-3xl font-bold text-emergency mb-1">
                 {s.value}
               </div>
               <div className="text-xs text-white/40 leading-tight">{s.label}</div>
             </div>
           ))}
-        </motion.div>
+        </div>
       </div>
 
       {/* Scroll indicator */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.2 }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-white/20"
-      >
+      <div className="hero-fade-6 absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-white/20">
         <span className="text-xs tracking-widest uppercase">Scroll</span>
         <ChevronDown className="w-4 h-4 animate-bounce" />
-      </motion.div>
+      </div>
     </section>
   );
 }

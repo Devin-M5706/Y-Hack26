@@ -104,10 +104,6 @@ export default function DeviceList({ devices }: Props) {
         ItemSeparatorComponent={() => <View style={styles.separator} />}
       />
 
-      {/* Mock data note */}
-      <Text style={styles.mockNote}>
-        Simulated data — live geofencing backend coming in Phase 2
-      </Text>
     </View>
   );
 }
@@ -194,12 +190,5 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: "#111111",
     marginLeft: 72,
-  },
-  mockNote: {
-    color: "#2A2A2A",
-    fontSize: 11,
-    textAlign: "center",
-    marginTop: 16,
-    paddingHorizontal: 20,
   },
 });
