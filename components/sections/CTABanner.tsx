@@ -69,7 +69,7 @@ export default function CTABanner() {
             </div>
 
             <p className="text-white/20 text-xs max-w-sm mx-auto">
-              ERAC is a supplementary tool. Always call 911 in an emergency.
+              handsforhearts is a supplementary tool. Always call 911 in an emergency.
               CPR guidance follows American Heart Association guidelines.
             </p>
           </div>

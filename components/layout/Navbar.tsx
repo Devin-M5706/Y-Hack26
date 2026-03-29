@@ -32,7 +32,7 @@ export default function Navbar() {
             <span className="absolute -top-1 -right-1 w-2 h-2 bg-emergency rounded-full animate-pulse" />
           </div>
           <span className="font-bold text-white tracking-tight text-lg">
-            ER<span className="text-emergency">AC</span>
+            hands<span className="text-emergency">for</span>hearts
           </span>
         </Link>
 

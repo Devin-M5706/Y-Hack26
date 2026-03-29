@@ -81,7 +81,7 @@ export default function Hero() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="text-lg sm:text-xl text-white/50 max-w-2xl mx-auto leading-relaxed mb-10"
         >
-          ERAC uses Apple Watch's continuous biometric monitoring to detect
+          handsforhearts uses Apple Watch's continuous biometric monitoring to detect
           cardiac arrest, then broadcasts a{" "}
           <span className="text-white/80">Critical Alert</span> to every nearby
           iPhone — turning strangers into lifesavers in under 90 seconds.

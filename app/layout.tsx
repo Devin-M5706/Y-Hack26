@@ -9,12 +9,12 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "ERAC — Emergency Response Alerts for Cardiac Arrest",
+  title: "handsforhearts — Emergency Response Alerts for Cardiac Arrest",
   description:
     "Apple Watch detects cardiac arrest. Nearby strangers become first responders. Every second counts.",
   keywords: ["cardiac arrest", "CPR", "Apple Watch", "emergency response", "first responder"],
   openGraph: {
-    title: "ERAC — Emergency Response Alerts for Cardiac Arrest",
+    title: "handsforhearts — Emergency Response Alerts for Cardiac Arrest",
     description: "The person next to you might need your help right now.",
     type: "website",
   },
