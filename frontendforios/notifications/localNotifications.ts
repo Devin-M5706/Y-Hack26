@@ -37,6 +37,15 @@ function fallbackTitleForSeverity(alert: IncomingAlert): string {
   return "⚠️ URGENT CARDIAC ALERT";
 }
 
+function soundForSeverity(alert: IncomingAlert): string | boolean {
+  const severity = String(alert.severity ?? "").toLowerCase();
+  if (severity === "critical") {
+    return "critical-alert.wav";
+  }
+
+  return true;
+}
+
 export async function initializeLocalNotifications(): Promise<boolean> {
   if (initialized) {
     return true;
@@ -71,13 +80,14 @@ export async function scheduleEmergencyLocalNotification(
       : `🚑 Possible STEMI for ${victim} (${asDistanceLabel(
           alert.distanceMeters
         )}). Respond now and call emergency services.`;
+  const sound = soundForSeverity(alert);
 
   await Notifications.scheduleNotificationAsync({
     content: {
       title: alert.title?.trim() || fallbackTitleForSeverity(alert),
       body: alert.body?.trim() || fallbackBody,
       data: alert,
-      sound: true,
+      sound,
     },
     trigger: null,
   });

@@ -23,7 +23,12 @@
     "plugins": [
       "expo-asset",
       "expo-font",
-      "expo-notifications"
+      [
+        "expo-notifications",
+        {
+          "sounds": ["./assets/sounds/critical-alert.wav"]
+        }
+      ]
     ],
     "extra": {
       "ecgAlertApiBaseUrl": "http://10.66.101.208:8000",

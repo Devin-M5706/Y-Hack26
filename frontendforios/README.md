@@ -10,6 +10,17 @@ This app now supports foreground-first local alert delivery from the Python ECG 
 
 No APNs is used in this path.
 
+## Severity sounds
+
+- `critical` alerts use custom sound: `assets/sounds/critical-alert.wav`
+- `warning` alerts use default system notification sound
+
+If you regenerate the custom sound, run:
+
+```bash
+python scripts/generate_critical_alert_wav.py
+```
+
 ## Runtime config (`app.json` -> `expo.extra`)
 
 - `ecgAlertApiBaseUrl` (default: `http://127.0.0.1:8000`)
