@@ -1,1 +1,18 @@
-node_modules
+# dependencies
+node_modules/
+
+# next.js build output
+.next/
+out/
+
+# env files
+.env
+.env.local
+.env.*.local
+
+# claude
+.claude/
+
+# misc
+.DS_Store
+*.pem
