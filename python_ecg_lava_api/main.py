@@ -1,57 +1,57 @@
 from __future__ import annotations
 
+import asyncio
+import base64
 import json
 import os
-from datetime import datetime
+import uuid
+from collections import defaultdict, deque
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Deque
 
 import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field, HttpUrl
+from fastapi import FastAPI, HTTPException, Response, WebSocket, WebSocketDisconnect, status
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 load_dotenv(dotenv_path=Path(__file__).with_name(".env"))
 
-app = FastAPI(title="ECG STEMI Alert API", version="1.0.0")
+app = FastAPI(title="ECG Image STEMI Lava Bridge", version="3.0.0")
 
 
-class AppleHealthKitSingleLeadECG(BaseModel):
-    record_id: str = Field(..., description="Unique ECG record identifier from HealthKit")
-    measured_at: datetime = Field(..., description="Timestamp of ECG capture")
-    lead_label: str = Field(default="I", description="Single lead label from Apple Watch")
-    sampling_rate_hz: float = Field(..., gt=0)
-    voltage_samples_mv: list[float] = Field(..., min_length=1)
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
 
 
-class ContiguousLeadGroup(BaseModel):
-    lead_names: list[str] = Field(
-        ..., min_length=2, description="Contiguous lead names from upstream processing"
-    )
-    st_elevation_mm: float = Field(..., ge=0)
+def parse_base64_image(raw_value: str) -> tuple[str, str]:
+    value = raw_value.strip()
+    if not value:
+        raise ValueError("ecgImageBase64 cannot be empty")
+
+    media_type = "image/png"
+    encoded = value
+
+    if value.startswith("data:"):
+        header, separator, payload = value.partition(",")
+        if not separator:
+            raise ValueError("Invalid data URL image payload")
+        if ";base64" not in header:
+            raise ValueError("ECG image must be base64 encoded")
+        media_type = header.removeprefix("data:").split(";")[0] or media_type
+        encoded = payload
+
+    try:
+        base64.b64decode(encoded, validate=True)
+    except Exception as exc:
+        raise ValueError("ecgImageBase64 must contain valid base64 data") from exc
+
+    return media_type, encoded
 
 
-class ECGInferenceRequest(BaseModel):
-    patient_id: str
-    ecg: AppleHealthKitSingleLeadECG
-    derived_contiguous_lead_groups: list[ContiguousLeadGroup] = Field(default_factory=list)
-    paired_iphone_apn_endpoint: HttpUrl
-    healthkit_payload_placeholder: dict[str, Any] | None = Field(
-        default=None,
-        description="Optional raw HealthKit payload shape if already available upstream",
-    )
-
-
-class ECGInferenceResponse(BaseModel):
-    model_name: str
-    lava_request_id: str | None = None
-    rule_triggered: bool
-    model_triggered: bool | None = None
-    heart_attack_predicted: bool
-    apn_sent: bool
-    apn_status_code: int | None = None
-    apn_response: dict[str, Any] | str | None = None
-    model_output: dict[str, Any] = Field(default_factory=dict)
+def as_data_url(image_base64: str) -> str:
+    media_type, encoded = parse_base64_image(image_base64)
+    return f"data:{media_type};base64,{encoded}"
 
 
 def require_env(name: str) -> str:
@@ -64,43 +64,284 @@ def require_env(name: str) -> str:
     return value
 
 
-def stemi_rule_triggered(lead_groups: list[ContiguousLeadGroup]) -> bool:
-    return any(group.st_elevation_mm > 2.0 and len(group.lead_names) >= 2 for group in lead_groups)
+def parse_confidence_threshold() -> float:
+    raw = os.getenv("STEMI_CONFIDENCE_THRESHOLD", "0.80")
+    try:
+        value = float(raw)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=500,
+            detail="STEMI_CONFIDENCE_THRESHOLD must be numeric",
+        ) from exc
+    if value < 0 or value > 1:
+        raise HTTPException(
+            status_code=500,
+            detail="STEMI_CONFIDENCE_THRESHOLD must be between 0 and 1",
+        )
+    return value
 
 
 def parse_model_content(raw_content: Any) -> dict[str, Any]:
+    if isinstance(raw_content, dict):
+        return raw_content
+
     if isinstance(raw_content, str):
         try:
             parsed = json.loads(raw_content)
             if isinstance(parsed, dict):
                 return parsed
-            return {"raw_content": raw_content}
+            return {"rawContent": raw_content}
         except json.JSONDecodeError:
-            return {"raw_content": raw_content}
+            return {"rawContent": raw_content}
 
     if isinstance(raw_content, list):
         text_parts: list[str] = []
         for item in raw_content:
             if isinstance(item, dict) and isinstance(item.get("text"), str):
                 text_parts.append(item["text"])
+            elif isinstance(item, str):
+                text_parts.append(item)
+
         joined = "".join(text_parts).strip()
         if not joined:
-            return {"raw_content": raw_content}
+            return {"rawContent": raw_content}
+
         try:
             parsed = json.loads(joined)
             if isinstance(parsed, dict):
                 return parsed
-            return {"raw_content": joined}
+            return {"rawContent": joined}
         except json.JSONDecodeError:
-            return {"raw_content": joined}
+            return {"rawContent": joined}
 
-    return {"raw_content": raw_content}
+    return {"rawContent": raw_content}
+
+
+def as_bool(value: Any) -> bool | None:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        lowered = value.strip().lower()
+        if lowered in {"true", "yes", "1"}:
+            return True
+        if lowered in {"false", "no", "0"}:
+            return False
+    return None
+
+
+def as_float(value: Any) -> float | None:
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return None
+    return None
+
+
+class EmergencyPushPayload(BaseModel):
+    emergencyId: str = Field(default_factory=lambda: f"emergency-{uuid.uuid4().hex[:12]}")
+    victimFirstName: str = "Unknown"
+    distanceMeters: float | str | None = None
+    latitude: float | str | None = None
+    longitude: float | str | None = None
+
+
+class ECGImageAnalyzeRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    ecgId: str
+    patientId: str | None = None
+    capturedAt: datetime = Field(default_factory=utc_now)
+    ecgImageBase64: str
+    targetDeviceIds: list[str] = Field(default_factory=list)
+    emergencyPayload: EmergencyPushPayload | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("ecgImageBase64")
+    @classmethod
+    def validate_image_base64(cls, value: str) -> str:
+        parse_base64_image(value)
+        return value
+
+
+class ModelAssessment(BaseModel):
+    stemiPresent: bool
+    confidence: float | None = None
+    reasoning: str
+    leadFindings: list[str] = Field(default_factory=list)
+    recommendation: str | None = None
+
+
+class ECGImageAnalyzeResponse(BaseModel):
+    modelName: str
+    lavaRequestId: str | None = None
+    analyzedAt: datetime
+    stemiPresent: bool
+    confidence: float | None = None
+    confidenceThreshold: float
+    emergencyTriggered: bool
+    dispatchAttempted: bool
+    dispatchSkippedReason: str | None = None
+    deliveredToConnected: list[str] = Field(default_factory=list)
+    queuedForPolling: list[str] = Field(default_factory=list)
+    modelAssessment: ModelAssessment
+    modelOutput: dict[str, Any] = Field(default_factory=dict)
+
+
+class TestAlertDispatchRequest(BaseModel):
+    targetDeviceIds: list[str] = Field(..., min_length=1)
+    title: str = "Possible STEMI detected"
+    body: str = "Possible ST-elevation myocardial infarction detected from ECG image."
+    emergencyPayload: EmergencyPushPayload | None = None
+    extra: dict[str, Any] = Field(default_factory=dict)
+
+
+class TestAlertDispatchResponse(BaseModel):
+    deliveredToConnected: list[str] = Field(default_factory=list)
+    queuedForPolling: list[str] = Field(default_factory=list)
+
+
+class DeviceChannelManager:
+    def __init__(self) -> None:
+        self._websockets: dict[str, set[WebSocket]] = defaultdict(set)
+        self._pending_alerts: dict[str, Deque[dict[str, Any]]] = defaultdict(deque)
+        self._lock = asyncio.Lock()
+
+    async def connect(self, device_id: str, websocket: WebSocket) -> None:
+        await websocket.accept()
+        async with self._lock:
+            self._websockets[device_id].add(websocket)
+
+    async def disconnect(self, device_id: str, websocket: WebSocket) -> None:
+        async with self._lock:
+            sockets = self._websockets.get(device_id)
+            if sockets is None:
+                return
+            sockets.discard(websocket)
+            if not sockets:
+                self._websockets.pop(device_id, None)
+
+    async def dispatch(
+        self,
+        target_device_ids: list[str],
+        payload: dict[str, Any],
+    ) -> tuple[list[str], list[str]]:
+        delivered: list[str] = []
+        queued: list[str] = []
+
+        for device_id in dict.fromkeys(target_device_ids):
+            was_delivered = await self._send_or_queue(device_id=device_id, payload=dict(payload))
+            if was_delivered:
+                delivered.append(device_id)
+            else:
+                queued.append(device_id)
+
+        return delivered, queued
+
+    async def _send_or_queue(self, device_id: str, payload: dict[str, Any]) -> bool:
+        async with self._lock:
+            sockets = list(self._websockets.get(device_id, set()))
+
+        if not sockets:
+            async with self._lock:
+                self._pending_alerts[device_id].append(payload)
+            return False
+
+        delivered = False
+        stale_sockets: list[WebSocket] = []
+
+        for websocket in sockets:
+            try:
+                await websocket.send_json(payload)
+                delivered = True
+            except Exception:
+                stale_sockets.append(websocket)
+
+        if stale_sockets:
+            async with self._lock:
+                active = self._websockets.get(device_id)
+                if active is not None:
+                    for socket in stale_sockets:
+                        active.discard(socket)
+                    if not active:
+                        self._websockets.pop(device_id, None)
+
+        if delivered:
+            return True
+
+        async with self._lock:
+            self._pending_alerts[device_id].append(payload)
+        return False
+
+    async def pop_next_alert(self, device_id: str) -> dict[str, Any] | None:
+        async with self._lock:
+            queue = self._pending_alerts.get(device_id)
+            if not queue:
+                return None
+            alert = queue.popleft()
+            if not queue:
+                self._pending_alerts.pop(device_id, None)
+            return alert
+
+    async def pending_count(self, device_id: str) -> int:
+        async with self._lock:
+            queue = self._pending_alerts.get(device_id)
+            return len(queue) if queue else 0
+
+
+device_channels = DeviceChannelManager()
+
+
+def normalize_assessment(model_output: dict[str, Any]) -> ModelAssessment:
+    stemi_candidate_values = [
+        model_output.get("stemi_present"),
+        model_output.get("stemiPresent"),
+        model_output.get("st_elevation_mi_present"),
+        model_output.get("heart_attack_predicted"),
+    ]
+    stemi_present = False
+    for candidate in stemi_candidate_values:
+        parsed = as_bool(candidate)
+        if parsed is not None:
+            stemi_present = parsed
+            break
+
+    confidence = as_float(
+        model_output.get("confidence")
+        if model_output.get("confidence") is not None
+        else model_output.get("stemi_confidence")
+    )
+    if confidence is not None:
+        confidence = max(0.0, min(1.0, confidence))
+
+    reasoning_raw = model_output.get("reasoning")
+    if not isinstance(reasoning_raw, str) or not reasoning_raw.strip():
+        reasoning_raw = "Model did not provide an explanation."
+
+    lead_findings_raw = model_output.get("lead_findings")
+    lead_findings: list[str] = []
+    if isinstance(lead_findings_raw, list):
+        for finding in lead_findings_raw:
+            if isinstance(finding, str) and finding.strip():
+                lead_findings.append(finding.strip())
+
+    recommendation = model_output.get("recommendation")
+    recommendation_value = recommendation.strip() if isinstance(recommendation, str) else None
+
+    return ModelAssessment(
+        stemiPresent=stemi_present,
+        confidence=confidence,
+        reasoning=reasoning_raw.strip(),
+        leadFindings=lead_findings,
+        recommendation=recommendation_value,
+    )
 
 
 async def call_lava_gemini(
-    request: ECGInferenceRequest,
-    rule_triggered: bool,
-) -> tuple[str, str | None, dict[str, Any], bool | None]:
+    request: ECGImageAnalyzeRequest,
+) -> tuple[str, str | None, dict[str, Any], ModelAssessment]:
     api_key = require_env("LAVA_API_KEY")
     chat_completions_url = os.getenv(
         "LAVA_CHAT_COMPLETIONS_URL",
@@ -108,14 +349,19 @@ async def call_lava_gemini(
     )
     model_name = os.getenv("LAVA_MODEL_NAME", "gemini-3.1-pro-preview")
 
-    prompt_payload = {
-        "patient_id": request.patient_id,
-        "ecg": request.ecg.model_dump(mode="json"),
-        "derived_contiguous_lead_groups": [
-            group.model_dump(mode="json") for group in request.derived_contiguous_lead_groups
-        ],
-        "rule": "Predict true only when ST-segment elevation is > 2.0 mm in contiguous leads.",
-        "rule_precheck_triggered": rule_triggered,
+    instruction_payload = {
+        "task": "Review ECG image and decide whether ST-segment elevation consistent with acute myocardial infarction is present.",
+        "ecgId": request.ecgId,
+        "patientId": request.patientId,
+        "capturedAt": request.capturedAt.isoformat(),
+        "metadata": request.metadata,
+        "requiredOutput": {
+            "stemi_present": "boolean",
+            "confidence": "number from 0 to 1",
+            "reasoning": "string",
+            "lead_findings": "array of strings",
+            "recommendation": "string",
+        },
     }
 
     request_body = {
@@ -126,13 +372,24 @@ async def call_lava_gemini(
             {
                 "role": "system",
                 "content": (
-                    "Return JSON only. Keys: heart_attack_predicted (boolean), "
-                    "reasoning (string)."
+                    "You are assisting emergency triage. "
+                    "Only return valid JSON matching the requested schema. "
+                    "Do not include markdown."
                 ),
             },
             {
                 "role": "user",
-                "content": json.dumps(prompt_payload),
+                "content": [
+                    {"type": "text", "text": json.dumps(instruction_payload)},
+                    {
+                        "type": "text",
+                        "text": (
+                            "Check for ST-segment elevation patterns that are suggestive "
+                            "of myocardial infarction in the ECG image."
+                        ),
+                    },
+                    {"type": "image_url", "image_url": {"url": as_data_url(request.ecgImageBase64)}},
+                ],
             },
         ],
     }
@@ -143,12 +400,8 @@ async def call_lava_gemini(
     }
 
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                chat_completions_url,
-                headers=headers,
-                json=request_body,
-            )
+        async with httpx.AsyncClient(timeout=90.0) as client:
+            response = await client.post(chat_completions_url, headers=headers, json=request_body)
             response.raise_for_status()
     except httpx.HTTPError as exc:
         raise HTTPException(status_code=502, detail=f"Lava API request failed: {exc}") from exc
@@ -157,8 +410,6 @@ async def call_lava_gemini(
     lava_request_id = lava_json.get("id") if isinstance(lava_json, dict) else None
 
     model_output: dict[str, Any] = {}
-    model_triggered: bool | None = None
-
     if isinstance(lava_json, dict):
         choices = lava_json.get("choices")
         if isinstance(choices, list) and choices:
@@ -166,99 +417,140 @@ async def call_lava_gemini(
             if isinstance(first_choice, dict):
                 message = first_choice.get("message")
                 if isinstance(message, dict):
-                    parsed = parse_model_content(message.get("content"))
-                    model_output = parsed
-                    predicted = parsed.get("heart_attack_predicted")
-                    if isinstance(predicted, bool):
-                        model_triggered = predicted
+                    model_output = parse_model_content(message.get("content"))
 
-    return model_name, lava_request_id, model_output, model_triggered
+    assessment = normalize_assessment(model_output)
+    return model_name, lava_request_id, model_output, assessment
 
 
-async def send_apn_notification(
-    apn_endpoint: str,
-    patient_id: str,
-    model_output: dict[str, Any],
-) -> tuple[int, dict[str, Any] | str | None]:
-    apn_auth_bearer_token = require_env("APN_AUTH_BEARER_TOKEN")
-    apn_topic = require_env("APN_TOPIC")
+def should_trigger_alert(assessment: ModelAssessment, threshold: float) -> bool:
+    if not assessment.stemiPresent:
+        return False
+    if assessment.confidence is None:
+        return True
+    return assessment.confidence >= threshold
 
-    headers = {
-        "authorization": f"bearer {apn_auth_bearer_token}",
-        "apns-topic": apn_topic,
-        "apns-push-type": "alert",
-        "apns-priority": "10",
-        "content-type": "application/json",
+
+def build_stemi_alert_payload(
+    request: ECGImageAnalyzeRequest,
+    assessment: ModelAssessment,
+) -> dict[str, Any]:
+    emergency = request.emergencyPayload or EmergencyPushPayload()
+    confidence_text = "unknown"
+    if assessment.confidence is not None:
+        confidence_text = f"{assessment.confidence:.2f}"
+
+    return {
+        "type": "stemi_alert",
+        "emergencyId": emergency.emergencyId,
+        "victimFirstName": emergency.victimFirstName,
+        "distanceMeters": emergency.distanceMeters,
+        "latitude": emergency.latitude,
+        "longitude": emergency.longitude,
+        "ecgId": request.ecgId,
+        "title": "Possible STEMI detected",
+        "body": (
+            "Possible ST-elevation myocardial infarction detected on ECG "
+            f"{request.ecgId} (confidence {confidence_text})."
+        ),
+        "confidence": assessment.confidence,
+        "reasoning": assessment.reasoning,
+        "leadFindings": assessment.leadFindings,
+        "detectedAt": utc_now().isoformat(),
     }
-
-    body = {
-        "aps": {
-            "alert": {
-                "title": "Urgent Cardiac Alert",
-                "body": "Possible ST-elevation heart attack risk detected. Seek emergency care.",
-            },
-            "sound": "default",
-        },
-        "patient_id": patient_id,
-        "event": "possible_stemi_heart_attack",
-        "model_output": model_output,
-    }
-
-    try:
-        async with httpx.AsyncClient(http2=True, timeout=15.0) as client:
-            response = await client.post(apn_endpoint, headers=headers, json=body)
-    except httpx.HTTPError as exc:
-        raise HTTPException(status_code=502, detail=f"APN request failed: {exc}") from exc
-
-    parsed_response: dict[str, Any] | str | None
-    try:
-        parsed_json = response.json()
-        parsed_response = parsed_json if isinstance(parsed_json, dict) else {"data": parsed_json}
-    except ValueError:
-        parsed_response = response.text if response.text else None
-
-    return response.status_code, parsed_response
 
 
 @app.get("/health")
-async def health() -> dict[str, str]:
-    return {"status": "ok"}
+async def health() -> dict[str, Any]:
+    return {
+        "status": "ok",
+        "model": os.getenv("LAVA_MODEL_NAME", "gemini-3.1-pro-preview"),
+        "stemiConfidenceThreshold": parse_confidence_threshold(),
+    }
 
 
-@app.post("/v1/ecg/infer", response_model=ECGInferenceResponse)
-async def infer_heart_attack_from_ecg(request: ECGInferenceRequest) -> ECGInferenceResponse:
-    rule_triggered = stemi_rule_triggered(request.derived_contiguous_lead_groups)
+@app.websocket("/api/v1/devices/{device_id}/ws")
+async def device_websocket(websocket: WebSocket, device_id: str) -> None:
+    await device_channels.connect(device_id, websocket)
+    try:
+        while True:
+            message = await websocket.receive_text()
+            if message.strip().lower() == "ping":
+                await websocket.send_text("pong")
+    except WebSocketDisconnect:
+        pass
+    finally:
+        await device_channels.disconnect(device_id, websocket)
 
-    model_name, lava_request_id, model_output, model_triggered = await call_lava_gemini(
-        request,
-        rule_triggered,
-    )
 
-    # Safety gate: final alert decision follows the explicit rule requirement.
-    heart_attack_predicted = rule_triggered
+@app.get("/api/v1/devices/{device_id}/alerts/next")
+async def get_next_alert(device_id: str, response: Response) -> dict[str, Any] | None:
+    alert = await device_channels.pop_next_alert(device_id)
+    if alert is None:
+        response.status_code = status.HTTP_204_NO_CONTENT
+        return None
+    return alert
 
-    apn_sent = False
-    apn_status_code: int | None = None
-    apn_response: dict[str, Any] | str | None = None
 
-    if heart_attack_predicted:
-        apn_status_code, apn_response = await send_apn_notification(
-            apn_endpoint=str(request.paired_iphone_apn_endpoint),
-            patient_id=request.patient_id,
-            model_output=model_output,
-        )
-        apn_sent = 200 <= apn_status_code < 300
+@app.get("/api/v1/devices/{device_id}/alerts/pending")
+async def get_pending_alert_count(device_id: str) -> dict[str, int]:
+    return {"pending": await device_channels.pending_count(device_id)}
 
-    return ECGInferenceResponse(
-        model_name=model_name,
-        lava_request_id=lava_request_id,
-        rule_triggered=rule_triggered,
-        model_triggered=model_triggered,
-        heart_attack_predicted=heart_attack_predicted,
-        apn_sent=apn_sent,
-        apn_status_code=apn_status_code,
-        apn_response=apn_response,
-        model_output=model_output,
+
+@app.post("/api/v1/alerts/test", response_model=TestAlertDispatchResponse)
+async def dispatch_test_alert(request: TestAlertDispatchRequest) -> TestAlertDispatchResponse:
+    emergency = request.emergencyPayload or EmergencyPushPayload(victimFirstName="Alex")
+    payload = {
+        "type": "stemi_alert_test",
+        "emergencyId": emergency.emergencyId,
+        "victimFirstName": emergency.victimFirstName,
+        "distanceMeters": emergency.distanceMeters,
+        "latitude": emergency.latitude,
+        "longitude": emergency.longitude,
+        "title": request.title,
+        "body": request.body,
+        "detectedAt": utc_now().isoformat(),
+        **request.extra,
+    }
+    delivered, queued = await device_channels.dispatch(request.targetDeviceIds, payload)
+    return TestAlertDispatchResponse(deliveredToConnected=delivered, queuedForPolling=queued)
+
+
+@app.post("/api/v1/ecg/image-analyze", response_model=ECGImageAnalyzeResponse)
+async def analyze_ecg_image(request: ECGImageAnalyzeRequest) -> ECGImageAnalyzeResponse:
+    threshold = parse_confidence_threshold()
+    model_name, lava_request_id, model_output, assessment = await call_lava_gemini(request)
+
+    emergency_triggered = should_trigger_alert(assessment, threshold)
+    dispatch_attempted = False
+    dispatch_skipped_reason: str | None = None
+    delivered: list[str] = []
+    queued: list[str] = []
+
+    if emergency_triggered:
+        if request.targetDeviceIds:
+            dispatch_attempted = True
+            alert_payload = build_stemi_alert_payload(request=request, assessment=assessment)
+            delivered, queued = await device_channels.dispatch(request.targetDeviceIds, alert_payload)
+        else:
+            dispatch_skipped_reason = (
+                "STEMI detected, but no targetDeviceIds were provided for local alert delivery."
+            )
+
+    return ECGImageAnalyzeResponse(
+        modelName=model_name,
+        lavaRequestId=lava_request_id,
+        analyzedAt=utc_now(),
+        stemiPresent=assessment.stemiPresent,
+        confidence=assessment.confidence,
+        confidenceThreshold=threshold,
+        emergencyTriggered=emergency_triggered,
+        dispatchAttempted=dispatch_attempted,
+        dispatchSkippedReason=dispatch_skipped_reason,
+        deliveredToConnected=delivered,
+        queuedForPolling=queued,
+        modelAssessment=assessment,
+        modelOutput=model_output,
     )
 
 

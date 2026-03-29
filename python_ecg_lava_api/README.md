@@ -1,80 +1,118 @@
-# ECG + Lava + APN (FastAPI)
+# ECG Image STEMI Lava API
 
-Python-only FastAPI service that:
+This directory is a clean rewrite focused on one flow:
 
-1. Loads Gemini 3.1 Pro Preview through a Lava chat-completions endpoint.
-2. Accepts Apple HealthKit-style single-lead ECG input (with placeholders for upstream-derived lead groups).
-3. Predicts heart-attack risk using the explicit rule: ST-segment elevation `> 2.0 mm` in contiguous leads.
-4. Sends an APN push request to a known paired-iPhone APN endpoint when risk is predicted.
+1. Accept an ECG image.
+2. Send the image to Lava API using Gemini 3.1 Pro Preview.
+3. Detect whether ST-elevation consistent with myocardial infarction is present.
+4. If positive, deliver an alert event to iPhone clients through foreground-first channels (WebSocket and polling).
+5. React Native app schedules a local notification when that alert event is received.
+
+This path intentionally does not use APNs.
+
+## Important Delivery Limitation
+
+Without APNs, iOS cannot reliably wake a terminated app for server-originated emergency alerts.
+
+- Works well when app is active (foreground).
+- Can work in some background states depending on runtime conditions.
+- Not reliable when app is force-killed or fully suspended.
 
 ## Files
 
-- `main.py` - FastAPI app and inference flow
-- `requirements.txt` - Python dependencies
-- `.env.example` - Required environment variable placeholders
+- `main.py` - FastAPI app with Lava inference and alert routing
+- `requirements.txt` - pip dependencies
+- `pyproject.toml` - project metadata
+- `.env.example` - environment variables
 
-## Install
+## Environment
+
+Copy `.env.example` to `.env` and fill values:
+
+- `LAVA_API_KEY` (required)
+- `LAVA_CHAT_COMPLETIONS_URL` (optional override)
+- `LAVA_MODEL_NAME` (default: `gemini-3.1-pro-preview`)
+- `STEMI_CONFIDENCE_THRESHOLD` (default: `0.80`)
+
+## Install and Run
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate  # Windows PowerShell: .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-```
-
-## Configure
-
-Copy `.env.example` to `.env` and fill actual values.
-
-Required env vars:
-
-- `LAVA_API_KEY`
-- `APN_AUTH_BEARER_TOKEN`
-- `APN_TOPIC`
-
-Optional:
-
-- `LAVA_CHAT_COMPLETIONS_URL`
-- `LAVA_MODEL_NAME` (defaults to `gemini-3.1-pro-preview`)
-
-## Run
-
-```bash
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-## Endpoint
+## Endpoints
 
 - `GET /health`
-- `POST /v1/ecg/infer`
+- `POST /api/v1/ecg/image-analyze`
+- `POST /api/v1/alerts/test`
+- `WS /api/v1/devices/{device_id}/ws`
+- `GET /api/v1/devices/{device_id}/alerts/next`
+- `GET /api/v1/devices/{device_id}/alerts/pending`
 
-Example request:
+## ECG Image Analyze Request
+
+`POST /api/v1/ecg/image-analyze`
 
 ```json
 {
-  "patient_id": "patient-123",
-  "ecg": {
-    "record_id": "hk-ecg-0001",
-    "measured_at": "2026-03-29T12:00:00Z",
-    "lead_label": "I",
-    "sampling_rate_hz": 512,
-    "voltage_samples_mv": [0.01, 0.03, -0.02, 0.04]
+  "ecgId": "ecg-001",
+  "patientId": "patient-42",
+  "capturedAt": "2026-03-29T12:00:00Z",
+  "ecgImageBase64": "iVBORw0KGgoAAAANSUhEUgAA...",
+  "targetDeviceIds": ["iphone-device-1"],
+  "emergencyPayload": {
+    "emergencyId": "emerg-123",
+    "victimFirstName": "Alex",
+    "distanceMeters": 110.5,
+    "latitude": 37.332,
+    "longitude": -122.031
   },
-  "derived_contiguous_lead_groups": [
-    {
-      "lead_names": ["II", "III"],
-      "st_elevation_mm": 2.3
-    }
-  ],
-  "paired_iphone_apn_endpoint": "https://api.push.apple.com/3/device/your-device-token",
-  "healthkit_payload_placeholder": {
-    "source": "HealthKit",
-    "note": "Upstream payload shape placeholder"
+  "metadata": {
+    "source": "camera-upload"
   }
 }
 ```
 
-## Behavior
+You may send either:
 
-- The service always calls the Lava model for inference output.
-- The final alert gate is deterministic: alert is triggered only when any contiguous lead group has `st_elevation_mm > 2.0` and at least 2 lead names.
-- On alert, APN request is sent to the provided endpoint.
+- raw base64 image data, or
+- a full data URL like `data:image/png;base64,...`
+
+## Alert Event Shape Sent to iPhone App
+
+When STEMI is triggered, the backend pushes payloads like this through WebSocket or polling:
+
+```json
+{
+  "type": "stemi_alert",
+  "emergencyId": "emerg-123",
+  "victimFirstName": "Alex",
+  "distanceMeters": 110.5,
+  "latitude": 37.332,
+  "longitude": -122.031,
+  "ecgId": "ecg-001",
+  "title": "Possible STEMI detected",
+  "body": "Possible ST-elevation myocardial infarction detected on ECG ecg-001 (confidence 0.91).",
+  "confidence": 0.91,
+  "reasoning": "...",
+  "leadFindings": ["Inferior lead ST elevation"],
+  "detectedAt": "2026-03-29T12:00:02Z"
+}
+```
+
+The React Native app should schedule a local notification from this payload.
+
+## Quick Test Alert
+
+```bash
+curl -X POST http://localhost:8000/api/v1/alerts/test \
+  -H "Content-Type: application/json" \
+  -d '{
+    "targetDeviceIds": ["iphone-device-1"],
+    "title": "Test STEMI alert",
+    "body": "This is a local notification transport test."
+  }'
+```
