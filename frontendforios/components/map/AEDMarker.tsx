@@ -11,18 +11,16 @@ export default function AEDMarker({ aed }: Props) {
   return (
     <Marker
       coordinate={{ latitude: aed.lat, longitude: aed.lng }}
-      anchor={{ x: 0.5, y: 0.5 }}
+      anchor={{ x: 0.5, y: 0.7 }}
       title={aed.label}
       description={`${aed.building} · ${aed.description}`}
     >
       <View style={styles.container}>
+        <View style={styles.glow} />
         <View style={styles.dot}>
-          <Text style={styles.icon}>＋</Text>
+          <Text style={styles.icon}>✚</Text>
         </View>
-        <View style={styles.label}>
-          <Text style={styles.labelText}>AED</Text>
-          <Text style={styles.labelSub}>{aed.label}</Text>
-        </View>
+        <Text style={styles.label}>AED - {aed.label}</Text>
       </View>
     </Marker>
   );
@@ -31,44 +29,44 @@ export default function AEDMarker({ aed }: Props) {
 const styles = StyleSheet.create({
   container: {
     alignItems: "center",
+    minWidth: 132,
+  },
+  glow: {
+    position: "absolute",
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "rgba(83, 255, 166, 0.24)",
+    shadowColor: "#57FFB0",
+    shadowOpacity: 0.85,
+    shadowRadius: 15,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 8,
   },
   dot: {
-    width: 26,
-    height: 26,
-    borderRadius: 8,
-    backgroundColor: "#30D158",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: "rgba(117, 255, 189, 0.7)",
+    backgroundColor: "#1C8C56",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#30D158",
-    shadowOpacity: 0.8,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 6,
   },
   icon: {
-    color: "#fff",
-    fontSize: 14,
+    color: "#D3FFE6",
+    fontSize: 19,
+    lineHeight: 20,
     fontWeight: "700",
-    lineHeight: 18,
   },
   label: {
-    marginTop: 4,
-    backgroundColor: "#111111",
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderWidth: 1,
-    borderColor: "#30D15840",
-    alignItems: "center",
-  },
-  labelText: {
-    color: "#30D158",
-    fontSize: 10,
-    fontWeight: "700",
-  },
-  labelSub: {
-    color: "#ffffff99",
-    fontSize: 8,
-    fontWeight: "500",
+    color: "#EFF4FB",
+    fontSize: 12,
+    fontWeight: "600",
+    textAlign: "center",
+    marginTop: 7,
+    textShadowColor: "rgba(5, 8, 14, 0.7)",
+    textShadowRadius: 6,
+    textShadowOffset: { width: 0, height: 1 },
   },
 });

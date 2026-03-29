@@ -1,11 +1,5 @@
 import React from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-  TouchableOpacity,
-} from "react-native";
+import { View, Text, FlatList, StyleSheet } from "react-native";
 import { NearbyDevice } from "../../data/mockDevices";
 
 function timeAgo(date: Date): string {
@@ -17,47 +11,18 @@ function timeAgo(date: Date): string {
 
 function DeviceRow({ item }: { item: NearbyDevice }) {
   const isAlert = item.status === "alert";
-  const isWatch = item.deviceType === "Apple Watch";
 
   return (
-    <View style={[styles.row, isAlert && styles.rowAlert]}>
-      {/* Icon */}
-      <View
-        style={[
-          styles.iconBox,
-          { backgroundColor: isAlert ? "#E8192C15" : "#ffffff08" },
-        ]}
-      >
-        <Text style={styles.iconEmoji}>{isWatch ? "⌚" : "📱"}</Text>
-      </View>
-
-      {/* Info */}
+    <View style={styles.row}>
       <View style={styles.rowInfo}>
         <Text style={styles.rowTitle}>{item.deviceType}</Text>
         <Text style={styles.rowSub}>
-          {item.distanceMeters.toFixed(0)}m away · {timeAgo(item.lastSeen)}
+          {item.distanceMeters.toFixed(0)}m away - {timeAgo(item.lastSeen)}
         </Text>
       </View>
 
-      {/* Status badge */}
-      <View
-        style={[
-          styles.badge,
-          { backgroundColor: isAlert ? "#E8192C20" : "#30D15818" },
-        ]}
-      >
-        <View
-          style={[
-            styles.badgeDot,
-            { backgroundColor: isAlert ? "#E8192C" : "#30D158" },
-          ]}
-        />
-        <Text
-          style={[
-            styles.badgeText,
-            { color: isAlert ? "#E8192C" : "#30D158" },
-          ]}
-        >
+      <View style={[styles.badge, isAlert ? styles.badgeAlert : styles.badgeSafe]}>
+        <Text style={[styles.badgeText, isAlert ? styles.badgeAlertText : styles.badgeSafeText]}>
           {isAlert ? "Alert" : "Safe"}
         </Text>
       </View>
@@ -70,125 +35,123 @@ interface Props {
 }
 
 export default function DeviceList({ devices }: Props) {
-  // Sort: alerts first
   const sorted = [...devices].sort((a, b) => {
     if (a.status === "alert" && b.status !== "alert") return -1;
     if (b.status === "alert" && a.status !== "alert") return 1;
     return a.distanceMeters - b.distanceMeters;
   });
+  const visibleDevices = sorted.slice(0, 4);
 
   const alertCount = devices.filter((d) => d.status === "alert").length;
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>
-          {devices.length} opted-in devices within 100m
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>Connected Lifesavers</Text>
+      <Text style={styles.sectionSubtitle}>
+        {devices.length} opted-in devices within 100m
+      </Text>
+      {alertCount > 0 ? (
+        <Text style={styles.alertCount}>
+          {alertCount} alert{alertCount > 1 ? "s" : ""}
         </Text>
-        {alertCount > 0 && (
-          <View style={styles.alertBadge}>
-            <Text style={styles.alertBadgeText}>
-              {alertCount} alert{alertCount > 1 ? "s" : ""}
-            </Text>
-          </View>
-        )}
+      ) : null}
+
+      <View style={styles.listContainer}>
+        <FlatList
+          data={visibleDevices}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <DeviceRow item={item} />}
+          scrollEnabled={false}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+        />
       </View>
-
-      {/* List */}
-      <FlatList
-        data={sorted}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <DeviceRow item={item} />}
-        scrollEnabled={false}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-      />
-
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    marginTop: 24,
+  section: {
+    flexShrink: 1,
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 12,
-    paddingHorizontal: 20,
-  },
-  headerTitle: {
-    color: "#666666",
-    fontSize: 12,
-    fontWeight: "500",
-    letterSpacing: 0.3,
-  },
-  alertBadge: {
-    backgroundColor: "#E8192C20",
-    borderRadius: 20,
+  sectionTitle: {
+    color: "#F5F7FB",
+    fontFamily: "Georgia",
+    fontSize: 17,
+    lineHeight: 23,
+    marginBottom: 8,
     paddingHorizontal: 8,
-    paddingVertical: 3,
   },
-  alertBadgeText: {
-    color: "#E8192C",
-    fontSize: 11,
-    fontWeight: "700",
+  sectionSubtitle: {
+    color: "#D1D9E8",
+    fontSize: 12,
+    paddingHorizontal: 8,
+  },
+  alertCount: {
+    color: "#EE5D72",
+    fontSize: 12,
+    fontWeight: "600",
+    marginTop: 4,
+    marginBottom: 10,
+    paddingHorizontal: 8,
+  },
+  listContainer: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(98, 116, 146, 0.35)",
+    backgroundColor: "rgba(9, 18, 31, 0.6)",
+    overflow: "hidden",
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    gap: 12,
-  },
-  rowAlert: {
-    backgroundColor: "#E8192C08",
-  },
-  iconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  iconEmoji: {
-    fontSize: 18,
+    justifyContent: "space-between",
+    paddingHorizontal: 14,
+    paddingVertical: 11,
   },
   rowInfo: {
     flex: 1,
+    marginRight: 8,
   },
   rowTitle: {
-    color: "#ffffff",
-    fontSize: 14,
-    fontWeight: "500",
-    marginBottom: 2,
+    color: "#F4F7FB",
+    fontSize: 17,
+    marginBottom: 3,
   },
   rowSub: {
-    color: "#555555",
-    fontSize: 12,
+    color: "#C3CCDA",
+    fontSize: 13,
   },
   badge: {
-    flexDirection: "row",
+    minWidth: 56,
     alignItems: "center",
-    gap: 5,
+    justifyContent: "center",
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingVertical: 4,
     paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
   },
-  badgeDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
+  badgeAlert: {
+    backgroundColor: "rgba(196, 45, 63, 0.22)",
+    borderColor: "rgba(245, 111, 130, 0.45)",
+  },
+  badgeSafe: {
+    backgroundColor: "rgba(45, 150, 109, 0.2)",
+    borderColor: "rgba(102, 207, 167, 0.4)",
   },
   badgeText: {
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: "600",
+  },
+  badgeAlertText: {
+    color: "#FF94A2",
+  },
+  badgeSafeText: {
+    color: "#89E2B7",
   },
   separator: {
     height: 1,
-    backgroundColor: "#111111",
-    marginLeft: 72,
+    marginLeft: 14,
+    marginRight: 14,
+    backgroundColor: "rgba(146, 157, 177, 0.26)",
   },
 });

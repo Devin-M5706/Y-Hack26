@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   Linking,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+
 import {
   VictimEvent,
   UserLocation,
@@ -39,7 +41,6 @@ export default function AlertInfoCard({
 }: Props) {
   const [elapsed, setElapsed] = useState(elapsedLabel(victim.detectedAt));
 
-  // Tick the elapsed timer every second
   useEffect(() => {
     const t = setInterval(
       () => setElapsed(elapsedLabel(victim.detectedAt)),
@@ -51,63 +52,63 @@ export default function AlertInfoCard({
   const dist = Math.round(
     distanceMeters(userLocation, { lat: victim.lat, lng: victim.lng })
   );
-  const etaMin = Math.max(1, Math.round(dist / 80)); // ~80 m/min walking
+  const etaMin = Math.max(1, Math.round(dist / 80));
+  const transport = transportLabel(transportState);
 
   function navigate() {
-    Linking.openURL(
-      `maps://?daddr=${victim.lat},${victim.lng}&dirflg=w`
-    ).catch(() =>
-      Linking.openURL(
-        `https://maps.google.com/?q=${victim.lat},${victim.lng}`
-      )
+    Linking.openURL(`maps://?daddr=${victim.lat},${victim.lng}&dirflg=w`).catch(
+      () => Linking.openURL(`https://maps.google.com/?q=${victim.lat},${victim.lng}`)
     );
   }
 
-  function call911() {
+  function callEmergencyServices() {
     Linking.openURL("tel:911");
   }
 
   return (
-    <View style={styles.card}>
-      <View style={styles.transportRow}>
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>Active Emergency</Text>
+
+      <View style={styles.card} accessibilityLabel={`Emergency details. ${transport}`}>
         <View
           style={[
-            styles.transportDot,
-            transportState.connectedVia === "websocket"
-              ? styles.transportDotConnected
-              : transportState.connectedVia === "polling"
-              ? styles.transportDotPolling
-              : styles.transportDotDisconnected,
+            styles.alertChip,
+            transportState.connectedVia === "disconnected" &&
+              styles.alertChipDisconnected,
           ]}
-        />
-        <Text style={styles.transportText}>{transportLabel(transportState)}</Text>
-      </View>
-
-      {/* Status row */}
-      <View style={styles.statusRow}>
-        <View style={styles.alertChip}>
+        >
           <View style={styles.chipDot} />
-          <Text style={styles.alertChipText}>⚠ ALERT ACTIVE</Text>
+          <Text style={styles.alertChipText}>ALERT ACTIVE</Text>
         </View>
+
         <Text style={styles.elapsed}>{elapsed}</Text>
-      </View>
+        <Text style={styles.distText}>
+          {dist}m away - ~{etaMin} min on foot
+        </Text>
+        <Text style={styles.address}>{victim.address}</Text>
 
-      {/* Distance / ETA */}
-      <View style={styles.distRow}>
-        <Text style={styles.distValue}>{dist}m away</Text>
-        <Text style={styles.distEta}> · ~{etaMin} min on foot</Text>
-      </View>
-      <Text style={styles.address} numberOfLines={1}>
-        {victim.address}
-      </Text>
-
-      {/* CTAs */}
-      <View style={styles.ctaRow}>
-        <TouchableOpacity style={styles.navBtn} onPress={navigate}>
-          <Text style={styles.navBtnText}>Navigate →</Text>
+        <TouchableOpacity
+          style={styles.navigateButton}
+          onPress={navigate}
+          activeOpacity={0.86}
+        >
+          <LinearGradient
+            colors={["#B8142E", "#D92941", "#BA152F"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.navigateGradient}
+          >
+            <Text style={styles.navigateText}>Navigate</Text>
+            <Text style={styles.navigateArrow}>{">"}</Text>
+          </LinearGradient>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.callBtn} onPress={call911}>
-          <Text style={styles.callBtnText}>📞 Call 911</Text>
+
+        <TouchableOpacity
+          style={styles.callButton}
+          onPress={callEmergencyServices}
+          activeOpacity={0.9}
+        >
+          <Text style={styles.callText}>Call Emergency Services</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -115,120 +116,122 @@ export default function AlertInfoCard({
 }
 
 const styles = StyleSheet.create({
+  section: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    color: "#F6F8FA",
+    fontFamily: "Georgia",
+    fontSize: 17,
+    lineHeight: 23,
+    marginBottom: 10,
+    paddingHorizontal: 8,
+  },
   card: {
-    backgroundColor: "#111111",
-    borderTopWidth: 1,
-    borderColor: "#1E1E1E",
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 12,
-  },
-  transportRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 10,
-  },
-  transportDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  transportDotConnected: {
-    backgroundColor: "#30D158",
-  },
-  transportDotPolling: {
-    backgroundColor: "#FF9F0A",
-  },
-  transportDotDisconnected: {
-    backgroundColor: "#8E8E93",
-  },
-  transportText: {
-    color: "#B0B0B0",
-    fontSize: 12,
-    fontWeight: "500",
-    letterSpacing: 0.2,
-  },
-  statusRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 10,
+    backgroundColor: "rgba(8, 16, 29, 0.84)",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(236, 63, 83, 0.65)",
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 14,
+    shadowColor: "#D72643",
+    shadowOpacity: 0.2,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 8,
   },
   alertChip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    backgroundColor: "#E8192C18",
+    alignSelf: "flex-start",
+    backgroundColor: "rgba(231, 44, 65, 0.22)",
     borderWidth: 1,
-    borderColor: "#E8192C40",
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    borderColor: "rgba(244, 87, 108, 0.65)",
+    borderRadius: 999,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    shadowColor: "#EF4059",
+    shadowOpacity: 0.45,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 6,
+  },
+  alertChipDisconnected: {
+    borderColor: "rgba(190, 105, 115, 0.5)",
+    backgroundColor: "rgba(127, 65, 74, 0.26)",
   },
   chipDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#E8192C",
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#F35769",
+    marginRight: 8,
   },
   alertChipText: {
-    color: "#E8192C",
-    fontSize: 11,
+    color: "#FF7E8B",
+    fontSize: 12,
     fontWeight: "700",
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
   elapsed: {
-    color: "#444444",
-    fontSize: 12,
-  },
-  distRow: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    marginBottom: 3,
-  },
-  distValue: {
-    color: "#ffffff",
-    fontSize: 22,
-    fontWeight: "700",
-  },
-  distEta: {
-    color: "#666666",
+    color: "#A6AEBC",
     fontSize: 14,
+    marginTop: 11,
+    marginBottom: 8,
+  },
+  distText: {
+    color: "#E6ECF7",
+    fontSize: 14,
+    marginBottom: 4,
   },
   address: {
-    color: "#444444",
-    fontSize: 12,
+    color: "#D8DFEB",
+    fontSize: 13,
     marginBottom: 14,
   },
-  ctaRow: {
+  navigateButton: {
+    borderRadius: 12,
+    overflow: "hidden",
+    marginBottom: 10,
+    shadowColor: "#D92941",
+    shadowOpacity: 0.45,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  navigateGradient: {
     flexDirection: "row",
-    gap: 10,
-  },
-  navBtn: {
-    flex: 1,
-    backgroundColor: "#E8192C",
-    borderRadius: 14,
-    paddingVertical: 14,
     alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: "rgba(255, 128, 142, 0.65)",
   },
-  navBtnText: {
-    color: "#ffffff",
-    fontSize: 15,
+  navigateText: {
+    color: "#FFFFFF",
+    fontSize: 16,
     fontWeight: "700",
   },
-  callBtn: {
-    backgroundColor: "#ffffff10",
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#ffffff15",
+  navigateArrow: {
+    color: "#FFF2F5",
+    fontSize: 20,
+    fontWeight: "600",
+    marginTop: -1,
   },
-  callBtnText: {
-    color: "#ffffff",
-    fontSize: 15,
+  callButton: {
+    backgroundColor: "rgba(58, 67, 82, 0.7)",
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(149, 161, 180, 0.3)",
+  },
+  callText: {
+    color: "#F0F4F9",
+    fontSize: 14,
     fontWeight: "600",
   },
 });
