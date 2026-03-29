@@ -1,0 +1,52 @@
+name: ERACMVP
+options:
+  minimumXcodeGenVersion: 2.38.0
+  deploymentTarget:
+    iOS: "17.0"
+    watchOS: "10.0"
+settings:
+  base:
+    ALWAYS_SEARCH_USER_PATHS: NO
+
+targets:
+  ERACiOS:
+    type: application
+    platform: iOS
+    sources:
+      - path: iOSApp
+      - path: Shared
+    settings:
+      base:
+        SDKROOT: iphoneos
+        SUPPORTED_PLATFORMS: "iphoneos iphonesimulator"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+        PRODUCT_NAME: ERACiOS
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.erac.ios
+        INFOPLIST_FILE: iOSApp/Info.plist
+        CODE_SIGN_ENTITLEMENTS: iOSApp/ERACiOS.entitlements
+        DEVELOPMENT_TEAM: ""
+        SWIFT_VERSION: 5.0
+    scheme:
+      testTargets: []
+
+  ERACWatch:
+    type: application
+    platform: watchOS
+    sources:
+      - path: WatchApp
+      - path: Shared
+    settings:
+      base:
+        SDKROOT: watchos
+        SUPPORTED_PLATFORMS: "watchos watchsimulator"
+        TARGETED_DEVICE_FAMILY: "4"
+        WATCHOS_DEPLOYMENT_TARGET: "10.0"
+        PRODUCT_NAME: ERACWatch
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.erac.watch
+        INFOPLIST_FILE: WatchApp/Info.plist
+        CODE_SIGN_ENTITLEMENTS: WatchApp/ERACWatch.entitlements
+        DEVELOPMENT_TEAM: ""
+        SWIFT_VERSION: 5.0
+    scheme:
+      testTargets: []
