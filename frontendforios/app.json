@@ -26,8 +26,8 @@
       "expo-notifications"
     ],
     "extra": {
-      "ecgAlertApiBaseUrl": "http://127.0.0.1:8000",
-      "ecgAlertWsBaseUrl": "ws://127.0.0.1:8000",
+      "ecgAlertApiBaseUrl": "http://10.66.101.208:8000",
+      "ecgAlertWsBaseUrl": "ws://10.66.101.208:8000",
       "ecgAlertDeviceId": "iphone-device-1",
       "ecgAlertPollIntervalMs": 8000
     }
