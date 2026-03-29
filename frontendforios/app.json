@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "handsforhearts",
+    "slug": "handsforhearts",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "scheme": "handsforhearts",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#080808"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.handsforhearts.app"
+    },
+    "android": {
+      "package": "com.handsforhearts.app"
+    }
+  }
+}
