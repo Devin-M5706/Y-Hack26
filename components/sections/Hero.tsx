@@ -50,10 +50,8 @@ export default function Hero() {
       <div className="relative z-10 max-w-5xl mx-auto px-6 text-center pt-24 pb-20">
         {/* Badge */}
         <div className="hero-fade-1 inline-flex items-center gap-2 border border-emergency/30 bg-emergency/10 rounded-full px-4 py-1.5 text-xs text-emergency font-medium mb-8">
-        <div className="hero-fade-1 inline-flex items-center gap-2 border border-emergency/30 bg-emergency/10 rounded-full px-4 py-1.5 text-xs text-emergency font-medium mb-8">
           <Watch className="w-3.5 h-3.5" />
           Powered by Apple Watch HealthKit
-        </div>
         </div>
 
         {/* Headline */}
@@ -71,7 +69,6 @@ export default function Hero() {
 
         {/* CTAs */}
         <div className="hero-fade-4 flex flex-col sm:flex-row items-center justify-center gap-4 mb-20">
-        <div className="hero-fade-4 flex flex-col sm:flex-row items-center justify-center gap-4 mb-20">
           <Link
             href="#how-it-works"
             className="group relative flex items-center gap-2 bg-emergency hover:bg-emergency/90 text-white font-semibold px-7 py-3.5 rounded-full transition-all emergency-glow hover:scale-105"
@@ -87,13 +84,10 @@ export default function Hero() {
             View CPR Guide
           </Link>
         </div>
-        </div>
 
         {/* Stats strip */}
         <div className="hero-fade-5 grid grid-cols-2 sm:grid-cols-4 gap-px bg-white/5 rounded-2xl overflow-hidden border border-white/5">
-        <div className="hero-fade-5 grid grid-cols-2 sm:grid-cols-4 gap-px bg-white/5 rounded-2xl overflow-hidden border border-white/5">
           {stats.map((s, i) => (
-            <div key={i} className="bg-[#080808] px-6 py-5 text-center">
             <div key={i} className="bg-[#080808] px-6 py-5 text-center">
               <div className="text-2xl sm:text-3xl font-bold text-emergency mb-1">
                 {s.value}
@@ -107,10 +101,8 @@ export default function Hero() {
 
       {/* Scroll indicator */}
       <div className="hero-fade-6 absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-white/20">
-      <div className="hero-fade-6 absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-white/20">
         <span className="text-xs tracking-widest uppercase">Scroll</span>
         <ChevronDown className="w-4 h-4 animate-bounce" />
-      </div>
       </div>
     </section>
   );
