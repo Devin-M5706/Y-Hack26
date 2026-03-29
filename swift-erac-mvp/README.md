@@ -57,3 +57,17 @@ This will create `ERACMVP.xcodeproj` with both targets.
   - `didRegisterForRemoteNotifications` -> `didRegisterDeviceToken(_:)`
   - `didReceiveRemoteNotification` -> `didReceiveRemoteNotification(_:)`
 - Wire your 10-second "I'm OK - Cancel" UI action to `cancelEmergencyWithinWindow()`.
+
+## Free-tier APNs mock (Option 1)
+
+For Apple free-tier development where APNs cannot be used end-to-end, a direct injection path is available:
+
+- Programmatic mock push injection:
+  - `VictimEmergencyCoordinator.injectMockEmergencyPush(_:)`
+  - `ERACAppDelegate.injectMockEmergencyPushFromUI()`
+- Launch argument trigger (auto-inject one mock push on app startup):
+  - Add launch argument `-ERACMockPushOnLaunch` in your iOS scheme.
+- Default mock payload fields:
+  - `emergencyId`, `victimFirstName`, `distanceMeters`, `latitude`, `longitude`
+
+The mock path still flows through the same relay logic used by APNs handling, including Multipeer relay.
