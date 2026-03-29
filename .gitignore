@@ -16,3 +16,7 @@ out/
 # misc
 .DS_Store
 *.pem
+
+# Expo build artifacts
+frontendforios/.expo/
+frontendforios/dist/

@@ -1,9 +1,10 @@
+import { registerRootComponent } from "expo";
 import React from "react";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import AlertResponseScreen from "./screens/AlertResponseScreen";
 
-export default function App() {
+function App() {
   return (
     <SafeAreaProvider>
       <StatusBar style="light" />
@@ -11,3 +12,5 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
+
+registerRootComponent(App);

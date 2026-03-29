@@ -5,7 +5,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { MOCK_VICTIM, MOCK_USER_LOCATION } from "../data/victimEvent";
 import { MOCK_DEVICES } from "../data/mockDevices";
+import { AED_LOCATIONS } from "../data/aedData";
 import VictimMarker from "../components/map/VictimMarker";
+import AEDMarker from "../components/map/AEDMarker";
 import AlertInfoCard from "../components/map/AlertInfoCard";
 import DeviceList from "../components/nearby/DeviceList";
 
@@ -46,6 +48,9 @@ export default function AlertResponseScreen() {
         onMapReady={onMapReady}
       >
         <VictimMarker victim={MOCK_VICTIM} />
+        {AED_LOCATIONS.map((aed) => (
+          <AEDMarker key={aed.id} aed={aed} />
+        ))}
       </MapView>
 
       {/* Zone 2 — Alert info card */}
