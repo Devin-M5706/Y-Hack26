@@ -30,7 +30,7 @@ Without APNs, iOS cannot reliably wake a terminated app for server-originated em
 Copy `.env.example` to `.env` and fill values:
 
 - `LAVA_API_KEY` (required)
-- `LAVA_CHAT_COMPLETIONS_URL` (optional override)
+- `LAVA_CHAT_COMPLETIONS_URL` (optional override, default: `https://api.lava.so/v1/chat/completions`)
 - `LAVA_MODEL_NAME` (default: `gemini-3.1-pro-preview`)
 - `STEMI_CONFIDENCE_THRESHOLD` (default: `0.80`)
 

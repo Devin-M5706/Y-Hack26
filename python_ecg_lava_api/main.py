@@ -115,6 +115,13 @@ def require_env(name: str) -> str:
     return value
 
 
+def get_lava_chat_completions_url() -> str:
+    configured = os.getenv("LAVA_CHAT_COMPLETIONS_URL", "").strip()
+    if configured:
+        return configured
+    return "https://api.lava.so/v1/chat/completions"
+
+
 def parse_confidence_threshold() -> float:
     raw = os.getenv("STEMI_CONFIDENCE_THRESHOLD", "0.80")
     try:
@@ -418,10 +425,7 @@ async def call_lava_gemini(
     request: ECGImageAnalyzeRequest,
 ) -> tuple[str, str | None, dict[str, Any], ModelAssessment]:
     api_key = require_env("LAVA_API_KEY")
-    chat_completions_url = os.getenv(
-        "LAVA_CHAT_COMPLETIONS_URL",
-        "https://lava-api.example.com/v1/chat/completions",
-    )
+    chat_completions_url = get_lava_chat_completions_url()
     model_name = os.getenv("LAVA_MODEL_NAME", "gemini-3.1-pro-preview")
 
     instruction_payload = {
