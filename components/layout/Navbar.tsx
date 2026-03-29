@@ -32,7 +32,7 @@ export default function Navbar() {
             <span className="absolute -top-1 -right-1 w-2 h-2 bg-emergency rounded-full animate-pulse" />
           </div>
           <span className="font-bold text-white tracking-tight text-lg">
-            ER<span className="text-emergency">AC</span>
+            hands<span className="text-emergency">for</span>hearts
           </span>
         </Link>
 
@@ -54,13 +54,11 @@ export default function Navbar() {
           ))}
         </div>
 
-        {/* CTA */}
-        <div className="flex items-center gap-3">
-          <span className="hidden sm:flex items-center gap-1.5 text-xs text-white/40 border border-white/10 rounded-full px-3 py-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-            App coming soon
-          </span>
-        </div>
+        {/* App CTA */}
+        <button className="hidden sm:flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/20 text-white text-sm font-medium px-4 py-2 rounded-full transition-all">
+          <span className="w-2 h-2 bg-success rounded-full animate-pulse" />
+          App coming soon
+        </button>
       </div>
     </nav>
   );

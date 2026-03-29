@@ -187,7 +187,7 @@ export default function WhyItMatters() {
           </div>
 
           <p className="text-center text-white/30 text-sm mt-8">
-            ERAC targets{" "}
+            handsforhearts targets{" "}
             <span className="text-emergency font-semibold">bystander response under 90 seconds</span>
             {" "}— well within the survivable window.
           </p>

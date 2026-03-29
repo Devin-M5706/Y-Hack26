@@ -11,7 +11,7 @@ export default function Footer() {
             <div className="flex items-center gap-2 mb-3">
               <Activity className="w-4 h-4 text-emergency" strokeWidth={2.5} />
               <span className="font-bold text-white tracking-tight">
-                ER<span className="text-emergency">AC</span>
+                hands<span className="text-emergency">for</span>hearts
               </span>
             </div>
             <p className="text-white/40 text-sm leading-relaxed max-w-xs">
@@ -69,7 +69,7 @@ export default function Footer() {
 
         <div className="border-t border-white/5 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-white/25 text-xs">
-            © 2026 ERAC. Built for Y-Hack26.
+            © 2026 handsforhearts. Built for Y-Hack26.
           </p>
           <p className="text-white/25 text-xs flex items-center gap-1">
             Made with <Heart className="w-3 h-3 text-emergency fill-emergency" /> to save lives

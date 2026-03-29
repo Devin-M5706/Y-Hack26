@@ -1,10 +1,58 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useInView } from "framer-motion";
-import { useRef } from "react";
-import { MapPin, Users, Phone, Heart, ArrowRight, ChevronRight } from "lucide-react";
+import { MapPin, Users, Heart, ArrowRight, ChevronRight, Music2, VolumeX } from "lucide-react";
+
+function buildStayinAliveMelody(ctx: AudioContext): (() => void) {
+  const master = ctx.createGain();
+  master.gain.value = 0.18;
+  master.connect(ctx.destination);
+
+  const bps = 103 / 60;
+  const beat = 1 / bps; // ~0.583s
+
+  // "Ah, ha, ha, ha, stay-in' a-live, stay-in' a-live" in F minor
+  const notes: Array<{ f: number; s: number; d: number }> = [
+    { f: 349.23, s: 0,           d: beat * 0.7  }, // Ah
+    { f: 349.23, s: beat,        d: beat * 0.7  }, // ha
+    { f: 349.23, s: beat * 2,    d: beat * 0.7  }, // ha
+    { f: 311.13, s: beat * 3,    d: beat * 0.7  }, // ha (Eb)
+    { f: 349.23, s: beat * 4,    d: beat * 1.7  }, // STAY-
+    { f: 293.66, s: beat * 6,    d: beat * 0.7  }, // -in'
+    { f: 261.63, s: beat * 7,    d: beat * 2.0  }, // a-LIVE
+    { f: 349.23, s: beat * 9.5,  d: beat * 1.7  }, // STAY-
+    { f: 311.13, s: beat * 11.5, d: beat * 0.7  }, // -in'
+    { f: 293.66, s: beat * 12.5, d: beat * 2.2  }, // a-LIVE
+  ];
+
+  const oscs: OscillatorNode[] = [];
+
+  notes.forEach(({ f, s, d }) => {
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.connect(g);
+    g.connect(master);
+    osc.type = "triangle";
+    osc.frequency.value = f;
+
+    const t = ctx.currentTime + 0.3 + s;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(1, t + 0.04);
+    g.gain.setValueAtTime(1, t + d - 0.06);
+    g.gain.linearRampToValueAtTime(0, t + d);
+
+    osc.start(t);
+    osc.stop(t + d + 0.1);
+    oscs.push(osc);
+  });
+
+  return () => {
+    oscs.forEach((o) => { try { o.stop(); } catch {} });
+    master.disconnect();
+  };
+}
 
 type DemoState = "locked" | "alert" | "map" | "cpr";
 
@@ -158,7 +206,7 @@ function IPhoneScreen({ state }: { state: DemoState }) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <span className="text-white text-xs font-bold">ERAC</span>
+                    <span className="text-white text-xs font-bold">handsforhearts</span>
                     <span className="text-white/30 text-xs">now</span>
                   </div>
                   <div className="text-white/40 text-xs">EMERGENCY NEARBY</div>
@@ -217,6 +265,31 @@ export default function AlertDemo() {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-100px" });
 
+  const hasPlayed = useRef(false);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const stopMelody = useRef<(() => void) | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [muted, setMuted] = useState(false);
+
+  useEffect(() => {
+    if (!inView || hasPlayed.current || muted) return;
+    hasPlayed.current = true;
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      audioCtxRef.current = new AudioCtx();
+      stopMelody.current = buildStayinAliveMelody(audioCtxRef.current);
+      setIsPlaying(true);
+      const timer = setTimeout(() => setIsPlaying(false), 9000);
+      return () => clearTimeout(timer);
+    } catch {}
+  }, [inView, muted]);
+
+  const handleMute = useCallback(() => {
+    stopMelody.current?.();
+    setIsPlaying(false);
+    setMuted(true);
+  }, []);
+
   const current = demoStates[state];
 
   const advance = () => {
@@ -246,6 +319,28 @@ export default function AlertDemo() {
           <h2 className="text-4xl sm:text-5xl font-bold text-white mt-3 mb-4">
             See it happen in real time.
           </h2>
+
+          {/* Music indicator */}
+          <AnimatePresence>
+            {isPlaying && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 8 }}
+                className="inline-flex items-center gap-2 mt-3 bg-emergency/10 border border-emergency/20 text-emergency text-xs font-medium px-4 py-2 rounded-full"
+              >
+                <Music2 className="w-3.5 h-3.5 animate-pulse" />
+                Stayin&apos; Alive — Bee Gees · 103 BPM
+                <button
+                  onClick={handleMute}
+                  className="ml-1 text-emergency/50 hover:text-emergency transition-colors"
+                  aria-label="Mute"
+                >
+                  <VolumeX className="w-3.5 h-3.5" />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
           <p className="text-white/40 text-lg max-w-xl mx-auto">
             This is exactly what appears on a bystander's screen during a cardiac
             emergency.
@@ -332,7 +427,7 @@ export default function AlertDemo() {
                 <motion.div key="desc-locked" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
                   <h3 className="text-2xl font-bold text-white mb-3">Passive protection, always on.</h3>
                   <p className="text-white/50 leading-relaxed mb-4">
-                    Your phone sits in your pocket, completely normal. ERAC runs silently
+                    Your phone sits in your pocket, completely normal. handsforhearts runs silently
                     in the background, location shared only when an emergency is active.
                   </p>
                   <p className="text-white/30 text-sm">No battery drain. No constant notifications. Until they matter.</p>
@@ -378,7 +473,7 @@ export default function AlertDemo() {
                     No training required.
                   </h3>
                   <p className="text-white/50 leading-relaxed mb-4">
-                    7 steps, large text, a live metronome at 110 BPM. ERAC walks you through
+                    7 steps, large text, a live metronome at 110 BPM. handsforhearts walks you through
                     AHA-approved CPR — even if you've never done it before.
                   </p>
                   <div className="glass-card rounded-xl p-4 border border-white/5">

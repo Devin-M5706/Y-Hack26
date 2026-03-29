@@ -33,7 +33,7 @@ const steps = [
     color: "#FF6B35",
     title: "Call 911",
     instruction: "Call 911 now — or point to a specific person and say 'You, call 911.' Pointing to someone prevents the bystander effect.",
-    tip: "ERAC has already initiated the call. Confirm help is coming.",
+    tip: "handsforhearts has already initiated the call. Confirm help is coming.",
     action: "Call. Delegate. Confirm.",
     hasMetronome: false,
   },
