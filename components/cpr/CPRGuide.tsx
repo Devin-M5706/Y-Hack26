@@ -101,7 +101,8 @@ function Metronome({ active, showStayinAlive }: { active: boolean; showStayinAli
   const playClick = useCallback(() => {
     try {
       if (!audioCtxRef.current) {
-        audioCtxRef.current = new AudioContext();
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        audioCtxRef.current = new AudioCtx();
       }
       const ctx = audioCtxRef.current;
       const osc = ctx.createOscillator();
@@ -117,13 +118,26 @@ function Metronome({ active, showStayinAlive }: { active: boolean; showStayinAli
     } catch {}
   }, []);
 
+  const tickRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     if (!active) return;
-    const interval = setInterval(() => {
+    // Self-correcting timer: measures drift each beat and compensates,
+    // keeping the visual pulse locked to the target BPM over time.
+    let expected = performance.now() + BEAT_INTERVAL;
+
+    const tick = () => {
       setBeat((b) => !b);
       if (soundOn) playClick();
-    }, BEAT_INTERVAL);
-    return () => clearInterval(interval);
+      const drift = performance.now() - expected;
+      expected += BEAT_INTERVAL;
+      tickRef.current = setTimeout(tick, Math.max(0, BEAT_INTERVAL - drift));
+    };
+
+    tickRef.current = setTimeout(tick, BEAT_INTERVAL);
+    return () => {
+      if (tickRef.current) clearTimeout(tickRef.current);
+    };
   }, [active, soundOn, playClick]);
 
   return (
@@ -296,39 +310,28 @@ export default function CPRGuide() {
           </motion.div>
         </AnimatePresence>
 
-        {/* Right side: metronome or blank */}
+        {/* Right side: always mounted to prevent layout shift on step transitions */}
         <div className="lg:w-80 flex items-center justify-center">
-          {step.hasMetronome ? (
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={`metro-${current}`}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.3 }}
-              >
-                <Metronome active={true} showStayinAlive={"isStayinAlive" in step} />
-              </motion.div>
-            </AnimatePresence>
-          ) : (
-            <div className="w-full">
-              {/* Placeholder visual based on step */}
-              {current === 6 && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="flex flex-col items-center gap-4"
-                >
-                  <div className="relative w-24 h-24">
-                    <span className="absolute inset-0 rounded-full bg-success/20 animate-ping" />
-                    <div className="w-24 h-24 rounded-full bg-success/20 border border-success/30 flex items-center justify-center">
-                      <ShieldCheck className="w-10 h-10 text-success" />
-                    </div>
-                  </div>
-                  <p className="text-success text-sm font-medium text-center">Help is on the way.</p>
-                </motion.div>
-              )}
-            </div>
+          {/* Metronome — hidden (not unmounted) on non-metronome steps */}
+          <div style={{ visibility: step.hasMetronome ? "visible" : "hidden", position: step.hasMetronome ? "relative" : "absolute" }}>
+            <Metronome active={step.hasMetronome} showStayinAlive={"isStayinAlive" in step} />
+          </div>
+
+          {/* Step 7 completion visual */}
+          {!step.hasMetronome && current === 6 && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex flex-col items-center gap-4"
+            >
+              <div className="relative w-24 h-24">
+                <span className="absolute inset-0 rounded-full bg-success/20 animate-ping" />
+                <div className="w-24 h-24 rounded-full bg-success/20 border border-success/30 flex items-center justify-center">
+                  <ShieldCheck className="w-10 h-10 text-success" />
+                </div>
+              </div>
+              <p className="text-success text-sm font-medium text-center">Help is on the way.</p>
+            </motion.div>
           )}
         </div>
       </div>

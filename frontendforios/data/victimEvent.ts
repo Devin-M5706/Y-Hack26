@@ -1,5 +1,6 @@
 export interface VictimEvent {
   id: string;
+  name: string;
   lat: number;
   lng: number;
   address: string;
@@ -15,6 +16,7 @@ export interface UserLocation {
 // Mock victim near Kline Science Tower, Yale University
 export const MOCK_VICTIM: VictimEvent = {
   id: "evt-001",
+  name: "John D.",
   lat: 41.31761,
   lng: -72.92315,
   address: "219 Prospect St, New Haven, CT",

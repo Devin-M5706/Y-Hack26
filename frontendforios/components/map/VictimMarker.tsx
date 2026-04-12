@@ -116,7 +116,7 @@ export default function VictimMarker({ victim }: Props) {
         </View>
 
         <View style={styles.label}>
-          <Text style={styles.labelTitle}>John - Floor 2</Text>
+          <Text style={styles.labelTitle}>{victim.name}</Text>
           <Text style={styles.labelSub}>Cardiac Event - Active</Text>
         </View>
       </View>

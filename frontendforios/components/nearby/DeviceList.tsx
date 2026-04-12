@@ -63,6 +63,9 @@ export default function DeviceList({ devices }: Props) {
           renderItem={({ item }) => <DeviceRow item={item} />}
           scrollEnabled={false}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>No opted-in devices nearby</Text>
+          }
         />
       </View>
     </View>
@@ -153,5 +156,12 @@ const styles = StyleSheet.create({
     marginLeft: 14,
     marginRight: 14,
     backgroundColor: "rgba(146, 157, 177, 0.26)",
+  },
+  emptyText: {
+    color: "#D1D9E8",
+    fontSize: 13,
+    textAlign: "center",
+    paddingVertical: 20,
+    paddingHorizontal: 20,
   },
 });
