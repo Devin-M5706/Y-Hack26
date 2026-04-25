@@ -52,7 +52,8 @@ export default function AlertInfoCard({
   const dist = Math.round(
     distanceMeters(userLocation, { lat: victim.lat, lng: victim.lng })
   );
-  const etaMin = Math.max(1, Math.round(dist / 80));
+  const etaRaw = dist / 80; // ~80 m/min walking
+  const etaLabel = etaRaw < 1 ? "< 1 min" : `~${Math.round(etaRaw)} min`;
   const transport = transportLabel(transportState);
 
   function navigate() {
@@ -83,9 +84,11 @@ export default function AlertInfoCard({
 
         <Text style={styles.elapsed}>{elapsed}</Text>
         <Text style={styles.distText}>
-          {dist}m away - ~{etaMin} min on foot
+          {dist}m away · {etaLabel} on foot
         </Text>
-        <Text style={styles.address}>{victim.address}</Text>
+        <Text style={styles.address} numberOfLines={1} ellipsizeMode="tail">
+          {victim.address}
+        </Text>
 
         <TouchableOpacity
           style={styles.navigateButton}
