@@ -1,106 +1,70 @@
 "use client";
 
-import Link from "next/link";
-import { ChevronDown, Watch, Zap } from "lucide-react";
-
-const ECG_PATH =
-  "M0,60 L120,60 L130,55 C135,48 140,42 145,55 L150,60 L158,60 L161,8 L165,112 L169,32 L173,60 L185,60 L190,44 C200,18 210,44 220,60 L228,60 L560,60 " +
-  "M560,60 L680,60 L690,55 C695,48 700,42 705,55 L710,60 L718,60 L721,8 L725,112 L729,32 L733,60 L745,60 L750,44 C760,18 770,44 780,60 L788,60 L1120,60";
-
-const ECG_PATH_2 =
-  "M1120,60 L1240,60 L1250,55 C1255,48 1260,42 1265,55 L1270,60 L1278,60 L1281,8 L1285,112 L1289,32 L1293,60 L1305,60 L1310,44 C1320,18 1330,44 1340,60 L1348,60 L1680,60 " +
-  "M1680,60 L1800,60 L1810,55 C1815,48 1820,42 1825,55 L1830,60 L1838,60 L1841,8 L1845,112 L1849,32 L1853,60 L1865,60 L1870,44 C1880,18 1890,44 1900,60 L1908,60 L2240,60";
-
-const stats = [
-  { value: "356K", label: "US cardiac arrests / year" },
-  { value: "10%", label: "survival drop per minute" },
-  { value: "< 90s", label: "target first-response time" },
-  { value: "3×", label: "survival with bystander CPR" },
-];
+import { ChevronDown } from "lucide-react";
 
 export default function Hero() {
   return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-[#080808]">
-      {/* Radial red glow background */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-emergency/8 rounded-full blur-[120px]" />
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[400px] h-[300px] bg-emergency/5 rounded-full blur-[100px]" />
-      </div>
-
-      {/* Scrolling ECG line */}
-      <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[120px] pointer-events-none opacity-25">
-        <svg
-          className="w-[200%] h-full ecg-glow"
-          style={{ animation: "ecg-scroll 7s linear infinite" }}
-          viewBox="0 0 2240 120"
-          preserveAspectRatio="none"
-        >
-          <path
-            d={ECG_PATH + " " + ECG_PATH_2}
-            stroke="#E8192C"
-            strokeWidth="2"
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+    <section className="relative h-[921px] flex items-center justify-center px-6 overflow-hidden pt-20">
+      {/* Background Visuals */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,85,69,0.15)_0%,rgba(19,19,19,0)_70%)]" />
+        <img
+          alt="Emergency Services"
+          className="w-full h-full object-cover opacity-20 grayscale mix-blend-luminosity"
+          src="https://lh3.googleusercontent.com/aida-public/AB6AXuBWKV-uJbla56_Tx6wCdtjqRKy8t45AiMPnlgHBbpjF1j4-WnUCL9lp8GE8xMraztaHTpKLlPqdrVsV0xg2KfGethznfOCWo0z5Hx8-4R3Mbq800uRha3zhkubz5zAvGHGih5dcOBjcEDvwFADrjqW84n8vJAj4hOrW766iAo5WkBT7S3OLfsB4QCQ3HEtIyheUZXmbU7c2jqLBDYkIbAOob5QdvauYQFCONFeLObG6Pp4ivyThC4QLsjubx7U0Rowpc01yaLQCy5wH"
+        />
       </div>
 
       {/* Content */}
-      <div className="relative z-10 max-w-5xl mx-auto px-6 text-center pt-24 pb-20">
-        {/* Badge */}
-        <div className="hero-fade-1 inline-flex items-center gap-2 border border-emergency/30 bg-emergency/10 rounded-full px-4 py-1.5 text-xs text-emergency font-medium mb-8">
-          <Watch className="w-3.5 h-3.5" />
-          Powered by Apple Watch HealthKit
+      <div className="relative z-10 text-center max-w-4xl mx-auto">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#2A2A2A] border border-[#5B403F]/30 mb-8">
+          <span className="w-2 h-2 rounded-full bg-[#00A741] animate-pulse" />
+          <span className="text-xs font-bold tracking-widest uppercase text-[#53E16F]">
+            Network Active: 14,202 Responders
+          </span>
         </div>
 
-        {/* Headline */}
-        <h1 className="hero-fade-2 text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight text-white leading-[1.08] mb-6">
-          A bridge between a{" "}
-          <br className="hidden sm:block" />
-          heart stop and a heart{" "}
-          <span className="text-emergency text-glow">start.</span>
+        <h1 className="text-5xl md:text-7xl lg:text-8xl text-[#e2e2e2] italic mb-6 leading-tight tracking-tight font-['Newsreader']">
+          Because every heart deserves a{" "}
+          <span className="text-[#FFB4AA] not-italic">second chance.</span>
         </h1>
 
-        {/* Sub-headline */}
-        <p className="hero-fade-3 text-lg sm:text-xl text-white/50 max-w-2xl mx-auto leading-relaxed mb-10">
-          Handsforhearts turns bystanders into rescuers with a simple, seamless process.
+        <p className="text-lg md:text-xl text-[#e4bebc]/80 max-w-2xl mx-auto mb-12 font-[var(--font-inter)]">
+          The responder network for moments that matter most. We connect
+          life-saving skills with critical needs in real-time.
         </p>
 
-        {/* CTAs */}
-        <div className="hero-fade-4 flex flex-col sm:flex-row items-center justify-center gap-4 mb-20">
-          <Link
-            href="#how-it-works"
-            className="group relative flex items-center gap-2 bg-emergency hover:bg-emergency/90 text-white font-semibold px-7 py-3.5 rounded-full transition-all emergency-glow hover:scale-105"
-          >
-            <span className="absolute inset-0 rounded-full bg-emergency/30 scale-100 group-hover:scale-125 opacity-0 group-hover:opacity-100 transition-all duration-500" />
-            <Zap className="w-4 h-4 relative z-10" />
-            <span className="relative z-10">See How It Works</span>
-          </Link>
-          <Link
-            href="/cpr-guide"
-            className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold px-7 py-3.5 rounded-full transition-all hover:scale-105"
-          >
-            View CPR Guide
-          </Link>
-        </div>
-
-        {/* Stats strip */}
-        <div className="hero-fade-5 grid grid-cols-2 sm:grid-cols-4 gap-px bg-white/5 rounded-2xl overflow-hidden border border-white/5">
-          {stats.map((s, i) => (
-            <div key={i} className="bg-[#080808] px-6 py-5 text-center">
-              <div className="text-2xl sm:text-3xl font-bold text-emergency mb-1">
-                {s.value}
-              </div>
-              <div className="text-xs text-white/40 leading-tight">{s.label}</div>
-            </div>
-          ))}
+        <div className="flex items-center justify-center">
+          <form className="w-full max-w-md flex flex-col items-center gap-4">
+            <label htmlFor="hero-waitlist-email" className="sr-only">
+              Email address
+            </label>
+            <input
+              id="hero-waitlist-email"
+              name="email"
+              type="email"
+              required
+              inputMode="email"
+              autoComplete="email"
+              placeholder="Enter your email address"
+              className="w-full px-5 py-4 rounded-xl bg-[rgba(53,53,53,0.6)] border border-[#5B403F]/30 text-[#e2e2e2] placeholder:text-[#e4bebc]/50 focus:outline-none focus:ring-2 focus:ring-[#FFB4AA]/40"
+            />
+            <button
+              type="button"
+              className="group relative px-10 py-5 bg-gradient-to-r from-[#FFB4AA] to-[#FF5545] text-[#690003] rounded-xl font-bold text-xl shadow-[0_20px_40px_rgba(255,85,69,0.25)] hover:shadow-[0_25px_50px_rgba(255,85,69,0.4)] transition-all duration-300 transform active:scale-95 overflow-hidden"
+            >
+              <span className="relative z-10">Join Waitlist</span>
+              <span className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+            </button>
+          </form>
         </div>
       </div>
 
-      {/* Scroll indicator */}
-      <div className="hero-fade-6 absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-white/20">
-        <span className="text-xs tracking-widest uppercase">Scroll</span>
+      {/* Scroll Indicator */}
+      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-[#e4bebc]/40">
+        <span className="text-[10px] uppercase tracking-widest font-bold">
+          Scroll to Explore
+        </span>
         <ChevronDown className="w-4 h-4 animate-bounce" />
       </div>
     </section>
