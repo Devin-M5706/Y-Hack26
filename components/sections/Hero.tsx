@@ -11,19 +11,12 @@ export default function Hero() {
         <img
           alt="Emergency Services"
           className="w-full h-full object-cover opacity-20 grayscale mix-blend-luminosity"
-          src="https://lh3.googleusercontent.com/aida-public/AB6AXuBWKV-uJbla56_Tx6wCdtjqRKy8t45AiMPnlgHBbpjF1j4-WnUCL9lp8GE8xMraztaHTpKLlPqdrVsV0xg2KfGethznfOCWo0z5Hx8-4R3Mbq800uRha3zhkubz5zAvGHGih5dcOBjcEDvwFADrjqW84n8vJAj4hOrW766iAo5WkBT7S3OLfsB4QCQ3HEtIyheUZXmbU7c2jqLBDYkIbAOob5QdvauYQFCONFeLObG6Pp4ivyThC4QLsjubx7U0Rowpc01yaLQCy5wH"
+          src="/hero-background.png"
         />
       </div>
 
       {/* Content */}
       <div className="relative z-10 text-center max-w-4xl mx-auto">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#2A2A2A] border border-[#5B403F]/30 mb-8">
-          <span className="w-2 h-2 rounded-full bg-[#00A741] animate-pulse" />
-          <span className="text-xs font-bold tracking-widest uppercase text-[#53E16F]">
-            Network Active: 14,202 Responders
-          </span>
-        </div>
-
         <h1 className="text-5xl md:text-7xl lg:text-8xl text-[#e2e2e2] italic mb-6 leading-tight tracking-tight font-['Newsreader']">
           Because every heart deserves a{" "}
           <span className="text-[#FFB4AA] not-italic">second chance.</span>
