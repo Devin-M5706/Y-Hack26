@@ -21,3 +21,9 @@ out/
 # Expo build artifacts
 frontendforios/.expo/
 frontendforios/dist/
+
+# Python API runtime data
+python_ecg_lava_api/alerts.db
+python_ecg_lava_api/alerts.db-wal
+python_ecg_lava_api/alerts.db-shm
+python_ecg_lava_api/uploads/

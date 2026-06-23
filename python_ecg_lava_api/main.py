@@ -2,25 +2,180 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import hashlib
 import json
+import logging
 import mimetypes
 import os
+import time
 import uuid
-from collections import defaultdict, deque
+from collections import defaultdict
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Deque, Literal
+from typing import Any, Literal
 
+import aiosqlite
 import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Response, WebSocket, WebSocketDisconnect, status
+from fastapi import Depends, FastAPI, HTTPException, Request, Response, WebSocket, WebSocketDisconnect, status
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+from starlette.middleware.base import BaseHTTPMiddleware
 
 load_dotenv(dotenv_path=Path(__file__).with_name(".env"))
 
-app = FastAPI(title="ECG Image STEMI Lava Bridge", version="3.0.0")
+logger = logging.getLogger("erac")
+
 MODULE_DIR = Path(__file__).resolve().parent
 WORKSPACE_DIR = MODULE_DIR.parent
+SAFE_IMAGE_DIR = MODULE_DIR / "uploads"
+DB_PATH = MODULE_DIR / "alerts.db"
+
+# Max request body size: 10 MB (base64 ECG images are large)
+MAX_BODY_BYTES = 10 * 1024 * 1024
+
+
+# ---------------------------------------------------------------------------
+# SQLite-backed persistent alert queue
+# ---------------------------------------------------------------------------
+
+_db: aiosqlite.Connection | None = None
+
+
+async def get_db() -> aiosqlite.Connection:
+    assert _db is not None, "Database not initialized"
+    return _db
+
+
+async def init_db() -> aiosqlite.Connection:
+    db = await aiosqlite.connect(str(DB_PATH))
+    await db.execute("PRAGMA journal_mode=WAL")
+    await db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pending_alerts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            device_id TEXT NOT NULL,
+            payload TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+        """
+    )
+    await db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_pending_device ON pending_alerts(device_id)"
+    )
+    await db.commit()
+    return db
+
+
+async def close_db() -> None:
+    global _db
+    if _db is not None:
+        await _db.close()
+        _db = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global _db
+    SAFE_IMAGE_DIR.mkdir(parents=True, exist_ok=True)
+    _db = await init_db()
+    yield
+    await close_db()
+
+
+app = FastAPI(title="ECG Image STEMI Lava Bridge", version="4.0.0", lifespan=lifespan)
+
+
+# ---------------------------------------------------------------------------
+# Middleware: request body size limit
+# ---------------------------------------------------------------------------
+
+class BodySizeLimitMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        content_length = request.headers.get("content-length")
+        if content_length and int(content_length) > MAX_BODY_BYTES:
+            return Response(
+                content='{"detail":"Request body too large"}',
+                status_code=413,
+                media_type="application/json",
+            )
+        return await call_next(request)
+
+
+app.add_middleware(BodySizeLimitMiddleware)
+
+# ---------------------------------------------------------------------------
+# Middleware: CORS
+# ---------------------------------------------------------------------------
+
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[o.strip() for o in CORS_ORIGINS],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# ---------------------------------------------------------------------------
+# Auth: API key dependency
+# ---------------------------------------------------------------------------
+
+def get_api_key() -> str:
+    key = os.getenv("ERAC_API_KEY", "").strip()
+    if not key:
+        raise RuntimeError(
+            "ERAC_API_KEY environment variable must be set. "
+            "Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(32))\""
+        )
+    return key
+
+
+async def require_api_key(request: Request) -> None:
+    """FastAPI dependency that validates the Bearer token on every request."""
+    expected = get_api_key()
+    auth_header = request.headers.get("authorization", "")
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing Bearer token")
+    token = auth_header.removeprefix("Bearer ").strip()
+    if not hashlib.compare_digest(token, expected):
+        raise HTTPException(status_code=403, detail="Invalid API key")
+
+
+# ---------------------------------------------------------------------------
+# Rate limiter (in-memory token bucket)
+# ---------------------------------------------------------------------------
+
+class TokenBucketRateLimiter:
+    def __init__(self, rate: float, capacity: int) -> None:
+        self._rate = rate  # tokens per second
+        self._capacity = capacity
+        self._tokens: dict[str, float] = {}
+        self._last_refill: dict[str, float] = {}
+
+    def allow(self, key: str) -> bool:
+        now = time.monotonic()
+        if key not in self._tokens:
+            self._tokens[key] = self._capacity - 1
+            self._last_refill[key] = now
+            return True
+
+        elapsed = now - self._last_refill[key]
+        self._tokens[key] = min(
+            self._capacity, self._tokens[key] + elapsed * self._rate
+        )
+        self._last_refill[key] = now
+
+        if self._tokens[key] >= 1:
+            self._tokens[key] -= 1
+            return True
+        return False
+
+
+# 5 requests per minute per source IP for the analyze endpoint
+analyze_limiter = TokenBucketRateLimiter(rate=5 / 60, capacity=5)
 
 
 def utc_now() -> datetime:
@@ -63,29 +218,21 @@ def resolve_image_path(image_path: str) -> Path:
         raise ValueError("ecgImagePath cannot be empty")
 
     candidate = Path(value)
-    possible_paths: list[Path] = []
 
+    # Reject absolute paths — only allow filenames relative to the safe upload dir
     if candidate.is_absolute():
-        possible_paths.append(candidate.resolve())
-    else:
-        possible_paths.extend(
-            [
-                (Path.cwd() / candidate).resolve(),
-                (WORKSPACE_DIR / candidate).resolve(),
-                (MODULE_DIR / candidate).resolve(),
-            ]
-        )
+        raise ValueError("Absolute image paths are not allowed")
 
-    seen: set[str] = set()
-    for path in possible_paths:
-        normalized = str(path)
-        if normalized in seen:
-            continue
-        seen.add(normalized)
-        if path.exists() and path.is_file():
-            return path
+    resolved = (SAFE_IMAGE_DIR / candidate).resolve()
 
-    raise ValueError(f"ecgImagePath does not resolve to a file: {image_path}")
+    # Prevent path traversal (e.g. "../../etc/passwd")
+    if not str(resolved).startswith(str(SAFE_IMAGE_DIR.resolve())):
+        raise ValueError("Image path must stay within the uploads directory")
+
+    if not resolved.exists() or not resolved.is_file():
+        raise ValueError(f"ecgImagePath does not resolve to a file: {image_path}")
+
+    return resolved
 
 
 def data_url_from_image_path(image_path: str) -> str:
@@ -296,9 +443,10 @@ class TestAlertDispatchResponse(BaseModel):
 
 
 class DeviceChannelManager:
+    """Manages WebSocket connections (in-memory) and pending alerts (SQLite)."""
+
     def __init__(self) -> None:
         self._websockets: dict[str, set[WebSocket]] = defaultdict(set)
-        self._pending_alerts: dict[str, Deque[dict[str, Any]]] = defaultdict(deque)
         self._lock = asyncio.Lock()
 
     async def connect(self, device_id: str, websocket: WebSocket) -> None:
@@ -337,8 +485,7 @@ class DeviceChannelManager:
             sockets = list(self._websockets.get(device_id, set()))
 
         if not sockets:
-            async with self._lock:
-                self._pending_alerts[device_id].append(payload)
+            await self._queue_alert(device_id, payload)
             return False
 
         delivered = False
@@ -363,24 +510,39 @@ class DeviceChannelManager:
         if delivered:
             return True
 
-        async with self._lock:
-            self._pending_alerts[device_id].append(payload)
+        await self._queue_alert(device_id, payload)
         return False
 
+    async def _queue_alert(self, device_id: str, payload: dict[str, Any]) -> None:
+        db = await get_db()
+        await db.execute(
+            "INSERT INTO pending_alerts (device_id, payload) VALUES (?, ?)",
+            (device_id, json.dumps(payload)),
+        )
+        await db.commit()
+
     async def pop_next_alert(self, device_id: str) -> dict[str, Any] | None:
-        async with self._lock:
-            queue = self._pending_alerts.get(device_id)
-            if not queue:
-                return None
-            alert = queue.popleft()
-            if not queue:
-                self._pending_alerts.pop(device_id, None)
-            return alert
+        db = await get_db()
+        async with db.execute(
+            "SELECT id, payload FROM pending_alerts WHERE device_id = ? ORDER BY id LIMIT 1",
+            (device_id,),
+        ) as cursor:
+            row = await cursor.fetchone()
+        if row is None:
+            return None
+        alert_id, payload_str = row
+        await db.execute("DELETE FROM pending_alerts WHERE id = ?", (alert_id,))
+        await db.commit()
+        return json.loads(payload_str)
 
     async def pending_count(self, device_id: str) -> int:
-        async with self._lock:
-            queue = self._pending_alerts.get(device_id)
-            return len(queue) if queue else 0
+        db = await get_db()
+        async with db.execute(
+            "SELECT COUNT(*) FROM pending_alerts WHERE device_id = ?",
+            (device_id,),
+        ) as cursor:
+            row = await cursor.fetchone()
+        return row[0] if row else 0
 
 
 device_channels = DeviceChannelManager()
@@ -506,7 +668,8 @@ async def call_lava_gemini(
             response = await client.post(chat_completions_url, headers=headers, json=request_body)
             response.raise_for_status()
     except httpx.HTTPError as exc:
-        raise HTTPException(status_code=502, detail=f"Lava API request failed: {exc}") from exc
+        logger.error("Lava API request failed: %s", exc)
+        raise HTTPException(status_code=502, detail="ECG analysis service unavailable") from exc
 
     lava_json = response.json()
     lava_request_id = lava_json.get("id") if isinstance(lava_json, dict) else None
@@ -599,6 +762,16 @@ async def health() -> dict[str, Any]:
 
 @app.websocket("/api/v1/devices/{device_id}/ws")
 async def device_websocket(websocket: WebSocket, device_id: str) -> None:
+    # WebSocket auth: check token in query param since headers aren't reliable for WS
+    token = websocket.query_params.get("token", "")
+    try:
+        expected = get_api_key()
+    except RuntimeError:
+        await websocket.close(code=1008, reason="Server auth not configured")
+        return
+    if not hashlib.compare_digest(token, expected):
+        await websocket.close(code=1008, reason="Invalid token")
+        return
     await device_channels.connect(device_id, websocket)
     try:
         while True:
@@ -611,7 +784,7 @@ async def device_websocket(websocket: WebSocket, device_id: str) -> None:
         await device_channels.disconnect(device_id, websocket)
 
 
-@app.get("/api/v1/devices/{device_id}/alerts/next")
+@app.get("/api/v1/devices/{device_id}/alerts/next", dependencies=[Depends(require_api_key)])
 async def get_next_alert(device_id: str, response: Response) -> dict[str, Any] | None:
     alert = await device_channels.pop_next_alert(device_id)
     if alert is None:
@@ -620,12 +793,12 @@ async def get_next_alert(device_id: str, response: Response) -> dict[str, Any] |
     return alert
 
 
-@app.get("/api/v1/devices/{device_id}/alerts/pending")
+@app.get("/api/v1/devices/{device_id}/alerts/pending", dependencies=[Depends(require_api_key)])
 async def get_pending_alert_count(device_id: str) -> dict[str, int]:
     return {"pending": await device_channels.pending_count(device_id)}
 
 
-@app.post("/api/v1/alerts/test", response_model=TestAlertDispatchResponse)
+@app.post("/api/v1/alerts/test", response_model=TestAlertDispatchResponse, dependencies=[Depends(require_api_key)])
 async def dispatch_test_alert(request: TestAlertDispatchRequest) -> TestAlertDispatchResponse:
     emergency = request.emergencyPayload or EmergencyPushPayload(victimFirstName="Alex")
     payload = {
@@ -645,8 +818,11 @@ async def dispatch_test_alert(request: TestAlertDispatchRequest) -> TestAlertDis
     return TestAlertDispatchResponse(deliveredToConnected=delivered, queuedForPolling=queued)
 
 
-@app.post("/api/v1/ecg/image-analyze", response_model=ECGImageAnalyzeResponse)
-async def analyze_ecg_image(request: ECGImageAnalyzeRequest) -> ECGImageAnalyzeResponse:
+@app.post("/api/v1/ecg/image-analyze", response_model=ECGImageAnalyzeResponse, dependencies=[Depends(require_api_key)])
+async def analyze_ecg_image(request: ECGImageAnalyzeRequest, raw_request: Request) -> ECGImageAnalyzeResponse:
+    client_ip = raw_request.client.host if raw_request.client else "unknown"
+    if not analyze_limiter.allow(client_ip):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again later.")
     threshold = parse_confidence_threshold()
     threshold_enforced = enforce_confidence_threshold()
     target_device_ids = request.targetDeviceIds or default_target_device_ids()
@@ -695,4 +871,6 @@ async def analyze_ecg_image(request: ECGImageAnalyzeRequest) -> ECGImageAnalyzeR
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    host = os.getenv("HOST", "127.0.0.1")
+    port = int(os.getenv("PORT", "8000"))
+    uvicorn.run("main:app", host=host, port=port, reload=True)
