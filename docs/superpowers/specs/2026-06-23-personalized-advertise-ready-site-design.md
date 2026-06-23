@@ -17,14 +17,15 @@ This is a single, coherent improvement to one marketing site. It does **not** to
 
 ## 2. Current State (what exists today)
 
-- **Landing (`app/page.tsx`)** — desktop only. Sections: `Navbar` → `Hero` → `MissionGridSection` → `AlertDemo` → `VariantCTASection` → `Footer`.
+- **Landing (`app/page.tsx`)** — desktop only. Sections: `Navbar` → `Hero` → `StatsBar` → `MissionGridSection` → `AlertDemo` → `VariantCTASection` → `Footer`. `StatsBar` and `MissionGridSection` use decorative **three.js** effects (`ClientParticleField`, `ClientFloatingMedical`, lazy-loaded via `next/dynamic`, `ssr:false`).
 - **Mobile (`app/mobile/page.tsx`)** — `middleware.ts` redirects every phone user-agent here. It is a dead-end: "this lives in the app," a fake `href="#"` App Store button, **no waitlist**.
 - **Waitlist forms are dead** — three separate `<form>`/button instances (Hero, `VariantCTASection`, Navbar). Buttons are `type="button"`; nothing submits anywhere.
-- **Fabricated stats** — "Network Active: 14,202 Responders", "Join 50k+ Volunteers / +52k", "142 metropolitan areas", "240ms Average Alert Latency".
+- **Fabricated stats** — in `Hero` ("Network Active: 14,202 Responders"), in `StatsBar` ("240ms Alert Latency", "14.2k Active Responders", "142+ Metro Areas", "4.7min Avg Response Time"), and in `MissionGridSection` ("Join 50k+ Volunteers / +52,000 responders", "240ms Average Alert Latency", "142 metropolitan areas").
 - **Brand font not loaded** — components use `font-['Newsreader']` but `layout.tsx` only imports Inter, so the serif look silently falls back to system serif.
 - **SEO/share gaps** — no OG image, no `sitemap`/`robots`, no structured data; `metadata` lacks `metadataBase` and Twitter card.
 - **Broken nav anchors** — Navbar links `#how-it-works` and `#why-it-matters` point to section IDs that do not exist.
 - **Stale footer** — `© 2024`.
+- **Dependency conflict** — `react`/`react-dom` are `18.3.1`, but `@react-three/fiber@9` (peer `react >=19 <19.3`) and `@react-three/drei@10` (peer `react ^19`) require **React 19**. The 3D effects run on an unsupported React version. Also: `next.config.js` is empty `{}`; images use raw `<img>` to large external URLs; `skills/three/HeartScene.tsx` is dead code (never imported).
 
 ## 3. Decisions (locked)
 
@@ -36,6 +37,22 @@ This is a single, coherent improvement to one marketing site. It does **not** to
 | Stories | **Real cited stats + clearly-labeled example stories** in a content file | Nothing misleading ships; user swaps in real stories later. |
 | Mobile | **Remove the redirect; make the landing responsive** with the waitlist on it | Best for ad conversion; one page; crawler-safe. |
 | Test runner | **Vitest** (node environment) for pure logic + route handlers | Project has no test setup today; add it. UI verified via build + Vercel preview. |
+| 3D effects / React | **Keep three.js; upgrade React 18.3.1 → ^19** (react, react-dom, @types) | Satisfies fiber 9 + drei 10 + Next 16 peers; fixes the conflict while keeping the visual. |
+| Images | **Migrate `<img>` → `next/image`** + `next.config` `remotePatterns` | Lazy-load, AVIF/WebP, responsive sizes — LCP/SEO/ad-perf win. |
+
+### 3.1 Tech stack optimization (decided)
+
+| Piece | Now | Action |
+|---|---|---|
+| `react` / `react-dom` / `@types/*` | 18.3.1 / `^18` | **Upgrade to `^19`** to satisfy fiber 9 / drei 10 / Next 16. |
+| `three` / `@react-three/fiber` / `@react-three/drei` | 0.184 / 9 / 10 | **Keep** (lazy-loaded decorative effects). Delete dead `skills/three/HeartScene.tsx`. |
+| `next` 16.2.1 / `next.config.js` | empty `{}` | Add `images.remotePatterns`, `reactStrictMode: true`, `poweredByHeader: false`. |
+| images | raw `<img>` → external URLs | Migrate to `next/image` with explicit `width`/`height`/`sizes` (or `fill`). |
+| `framer-motion` 11 / `lucide-react` | fine | Keep as-is (tree-shakeable; React 19-compatible). |
+| `tailwindcss` 3.4 | fine | Keep (defer v4 migration — out of scope). |
+| testing / analytics | none | Add **Vitest** (node) + **@vercel/analytics** — both lean. |
+
+The React 19 upgrade is the headline fix: it removes the peer-dependency violation rather than papering over it.
 
 ## 4. Architecture & File Structure
 
@@ -72,7 +89,10 @@ This is a single, coherent improvement to one marketing site. It does **not** to
 | `components/layout/Footer.tsx` | Year via `new Date().getFullYear()`; consistent brand name. |
 | `app/cpr-guide/page.tsx` | Add a `metadata` export (title/description/canonical). |
 | `tailwind.config.ts` / `app/globals.css` | Add `fontFamily.display` mapped to `var(--font-newsreader)`; replace the (currently non-resolving) `font-['Newsreader']` usages across components with the `font-display` utility. |
-| `package.json` | Add `test` script + Vitest dev deps; add `@vercel/analytics`. |
+| `package.json` | Upgrade `react`/`react-dom` → `^19` and `@types/react`/`@types/react-dom` → `^19`; add `test` script + Vitest dev deps; add `@vercel/analytics`. |
+| `next.config.js` | Add `images.remotePatterns` (`lh3.googleusercontent.com`, `www.transparenttextures.com`), `reactStrictMode: true`, `poweredByHeader: false`. |
+| `app/page.tsx`, `components/sections/*` (img usage) | Replace raw `<img>` with `next/image` (explicit `width`/`height`/`sizes`; `priority` only on the Hero image). |
+| `skills/three/HeartScene.tsx` | Delete — unused dead code. |
 
 ### Data flow — waitlist
 
@@ -116,7 +136,7 @@ app/page.tsx (server component, async)
 - Optional campaign-aware subheadline: a small `CAMPAIGN_HEADLINES` map keyed by `utm_campaign`, with the default copy as fallback. (YAGNI: keep the map tiny; only add entries the user actually runs.)
 
 ### Section 3 — Honest content & human stories (personalize)
-- **Replace every fabricated number** with content from `content/stats.ts` (real, cited):
+- **Replace every fabricated number** — across the `Hero` badge, `StatsBar` (240ms / 14.2k / 142+ / 4.7min), and `MissionGridSection` (50k+ / +52,000 / 240ms / 142 metros) — with content from `content/stats.ts` (real, cited):
   - ~356,000 out-of-hospital cardiac arrests in the US each year.
   - Survival falls 7–10% for every minute without CPR/defibrillation.
   - Bystander CPR can double or triple survival.
@@ -148,6 +168,13 @@ app/page.tsx (server component, async)
 - Load Newsreader properly; verify the serif look renders.
 - Remove `middleware.ts` redirect + delete `/mobile`; confirm phones get the full responsive page.
 - `npm run build` and `npm run lint` pass; spot-check responsive layout at mobile width.
+
+### Section 8 — Tech stack & performance (optimize)
+- Upgrade `react`/`react-dom` and their `@types` to `^19`; run `npm install`; verify the 3D effects (`ParticleField`, `FloatingMedical`) still render and `npm run build` passes.
+- Add `next.config.js`: `images.remotePatterns` for `lh3.googleusercontent.com` + `www.transparenttextures.com`, `reactStrictMode: true`, `poweredByHeader: false`.
+- Replace raw `<img>` tags with `next/image` (explicit `width`/`height` or `fill` + `sizes`); `priority` only on the above-the-fold Hero image.
+- Delete unused `skills/three/HeartScene.tsx`.
+- Keep three.js lazy-loaded (`next/dynamic`, `ssr:false`) so it never blocks first paint.
 
 ## 6. Error Handling
 - `/api/waitlist`: invalid/missing email → `400 { ok:false, error:'invalid_email' }`. Webhook unreachable/non-200 → `502 { ok:false, error:'store_unavailable' }` (logged server-side; never leak the webhook URL). Missing `WAITLIST_SHEET_WEBHOOK_URL` → `500 { ok:false, error:'not_configured' }`.
@@ -182,3 +209,5 @@ app/page.tsx (server component, async)
 - Hero greets visitors with their city when available, "near you" otherwise.
 - Vercel Analytics records `waitlist_signup` events with campaign attribution.
 - `npm run build` and `npm run lint` pass.
+- `react`/`react-dom` are on `^19`; the fiber/drei peer-dependency conflict is gone; 3D effects render unchanged.
+- Images are served through `next/image` (responsive, lazy); `next.config.js` allows the external image hosts.
